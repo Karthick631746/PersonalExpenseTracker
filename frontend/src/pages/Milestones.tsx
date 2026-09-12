@@ -216,7 +216,7 @@ export default function Milestones() {
             const remaining = Math.max(0, m.targetAmount - m.savedAmount);
             const daysLeft = m.targetDate ? daysRemaining(m.targetDate) : null;
             const requiredMonthly = daysLeft !== null && daysLeft > 0
-              ? (remaining / (daysLeft / 30.44)).toFixed(0)
+              ? Math.ceil(remaining / Math.max(1, Math.ceil(daysLeft / 30.44)))
               : null;
             const MIcon = getIcon(m.icon || 'Target');
 
@@ -288,7 +288,7 @@ export default function Milestones() {
                     <div className="flex justify-between text-xs pt-1.5 border-t border-[#1e2130]">
                       <span className="muted flex items-center gap-1"><TrendingUp size={11} />Monthly needed</span>
                       <span className="font-semibold" style={{ color: '#22c55e' }}>
-                        {money(Number(requiredMonthly))}/mo
+                        {money(requiredMonthly)}/mo
                       </span>
                     </div>
                   )}
