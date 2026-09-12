@@ -9,6 +9,8 @@ import {
   RecurringTransaction,
   Milestone,
   MilestoneContribution,
+  GoldTarget,
+  GoldTransaction,
 } from '../models/index.js';
 import { Parser } from 'json2csv';
 
@@ -839,6 +841,98 @@ r.get('/export/transactions', async (req: AuthRequest, res) => {
     res.header('Content-Type', 'text/csv');
     res.attachment('transactions.csv');
     res.send(csv);
+  } catch {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// GOLD TRACKING
+// ═══════════════════════════════════════════════════════
+
+r.get('/gold/summary', async (req: AuthRequest, res) => {
+  try {
+    const uid = new Types.ObjectId(req.userId);
+    const [target, transactions] = await Promise.all([
+      GoldTarget.findOne({ userId: uid }),
+      GoldTransaction.find({ userId: uid }).sort({ date: 1 }),
+    ]);
+
+    let accumulatedGrams = 0;
+    const monthlyGraph: Record<string, number> = {};
+
+    for (const tx of transactions) {
+      if (tx.type === 'buy') {
+        accumulatedGrams += tx.grams;
+      } else if (tx.type === 'sell') {
+        accumulatedGrams = Math.max(0, accumulatedGrams - tx.grams);
+      }
+      
+      const d = new Date(tx.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthlyGraph[key] = accumulatedGrams;
+    }
+
+    // Fill missing months for a smooth line chart
+    const graphData = Object.keys(monthlyGraph).map(k => ({
+      month: k,
+      grams: monthlyGraph[k]
+    }));
+
+    res.json({
+      target,
+      accumulatedGrams,
+      graphData,
+    });
+  } catch (e: any) {
+    res.status(500).json({ message: e.message || 'Server error' });
+  }
+});
+
+r.post('/gold/target', async (req: AuthRequest, res) => {
+  try {
+    const target = await GoldTarget.findOneAndUpdate(
+      { userId: req.userId },
+      { ...req.body, userId: req.userId },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    res.json(target);
+  } catch (e: any) {
+    res.status(400).json({ message: e.message || 'Invalid data' });
+  }
+});
+
+r.get('/gold/transactions', async (req: AuthRequest, res) => {
+  try {
+    const transactions = await GoldTransaction.find({ userId: req.userId }).sort({ date: -1 });
+    res.json(transactions);
+  } catch {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+r.post('/gold/transactions', async (req: AuthRequest, res) => {
+  try {
+    const body = {
+      ...req.body,
+      userId: req.userId,
+      date: new Date(req.body.date),
+      grams: Number(req.body.grams),
+      price: req.body.price ? Number(req.body.price) : undefined,
+    };
+    if (body.grams <= 0) return res.status(400).json({ message: 'Grams must be positive' });
+    
+    const tx = await GoldTransaction.create(body);
+    res.status(201).json(tx);
+  } catch (e: any) {
+    res.status(400).json({ message: e.message || 'Invalid data' });
+  }
+});
+
+r.delete('/gold/transactions/:id', async (req: AuthRequest, res) => {
+  try {
+    await GoldTransaction.findOneAndDelete({ _id: req.params.id, userId: req.userId });
+    res.json({ success: true });
   } catch {
     res.status(500).json({ message: 'Server error' });
   }

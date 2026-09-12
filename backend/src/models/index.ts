@@ -150,3 +150,31 @@ export const CreditCard = mongoose.model('CreditCard', CardSchema);
 export const RecurringTransaction = mongoose.model('RecurringTransaction', RecurringSchema);
 export const Milestone = mongoose.model('Milestone', MilestoneSchema);
 export const MilestoneContribution = mongoose.model('MilestoneContribution', ContributionSchema);
+
+// ─── Gold ──────────────────────────────────────────────────
+const GoldTargetSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+    targetGrams: { type: Number, min: 0, required: true },
+    startDate: { type: Date },
+    endDate: { type: Date },
+  },
+  base
+);
+GoldTargetSchema.index({ userId: 1 });
+
+const GoldTransactionSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    date: { type: Date, required: true },
+    type: { type: String, enum: ['buy', 'sell'], required: true },
+    grams: { type: Number, min: 0, required: true },
+    price: { type: Number, min: 0 },
+    notes: { type: String, trim: true },
+  },
+  base
+);
+GoldTransactionSchema.index({ userId: 1, date: -1 });
+
+export const GoldTarget = mongoose.model('GoldTarget', GoldTargetSchema);
+export const GoldTransaction = mongoose.model('GoldTransaction', GoldTransactionSchema);

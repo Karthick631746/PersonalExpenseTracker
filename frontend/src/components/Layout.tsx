@@ -13,6 +13,7 @@ import {
   CreditCard,
   Menu,
   X,
+  Coins,
 } from 'lucide-react';
 import { useAuth } from '../context/Auth';
 
@@ -21,6 +22,7 @@ const nav = [
   ['/transactions', 'Transactions', Receipt],
   ['/budgets', 'Budgets', WalletCards],
   ['/milestones', 'Milestones', Target],
+  ['/gold', 'Gold', Coins],
   ['/credit-cards', 'Credit Cards', CreditCard],
   ['/analytics', 'Analytics', PieChart],
   ['/categories', 'Categories', Tags],

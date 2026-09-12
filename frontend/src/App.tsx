@@ -8,6 +8,7 @@ import Categories from './pages/Categories';
 import Budgets from './pages/Budgets';
 import CreditCards from './pages/CreditCards';
 import Milestones from './pages/Milestones';
+import Gold from './pages/Gold';
 import { Analytics, Upcoming, Settings } from './pages/Extra';
 import { ToastProvider } from './components/Toast';
 import './index.css';
@@ -46,6 +47,7 @@ export default function App() {
                   <Route path="/transactions" element={<Transactions />} />
                   <Route path="/budgets" element={<Budgets />} />
                   <Route path="/milestones" element={<Milestones />} />
+                  <Route path="/gold" element={<Gold />} />
                   <Route path="/credit-cards" element={<CreditCards />} />
                   <Route path="/categories" element={<Categories />} />
                   <Route path="/analytics" element={<Analytics />} />
