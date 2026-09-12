@@ -13,7 +13,7 @@ const sign = (id: string) =>
 
 const cookie = {
   httpOnly: true,
-  sameSite: 'lax' as const,
+  sameSite: process.env.NODE_ENV === 'production' ? ('none' as const) : ('lax' as const),
   secure: process.env.NODE_ENV === 'production',
   maxAge: 7 * 86_400_000,
 };
