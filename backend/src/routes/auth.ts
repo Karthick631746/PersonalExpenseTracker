@@ -43,8 +43,9 @@ r.post('/register', async (req, res) => {
       console.error('Category seed error:', err)
     );
 
-    res.cookie('token', sign(String(u._id)), cookie);
-    res.status(201).json({ id: u._id, name: u.name, email: u.email, currency: u.currency });
+    const token = sign(String(u._id));
+    res.cookie('token', token, cookie);
+    res.status(201).json({ token, id: u._id, name: u.name, email: u.email, currency: u.currency });
   } catch (e: any) {
     if (e?.name === 'ZodError')
       return res.status(400).json({ message: 'Invalid registration data', errors: e.errors });
@@ -64,8 +65,9 @@ r.post('/login', async (req, res) => {
   if (!u || !(await bcrypt.compare(b.data.password, u.passwordHash)))
     return res.status(401).json({ message: 'Invalid login credentials' });
 
-  res.cookie('token', sign(String(u._id)), cookie);
-  res.json({ id: u._id, name: u.name, email: u.email, currency: u.currency });
+  const token = sign(String(u._id));
+  res.cookie('token', token, cookie);
+  res.json({ token, id: u._id, name: u.name, email: u.email, currency: u.currency });
 });
 
 // Logout
