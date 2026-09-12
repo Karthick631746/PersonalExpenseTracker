@@ -161,8 +161,6 @@ const GoldTargetSchema = new Schema(
   },
   base
 );
-GoldTargetSchema.index({ userId: 1 });
-
 const GoldTransactionSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
