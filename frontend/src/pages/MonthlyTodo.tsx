@@ -42,8 +42,8 @@ function TodoItem({ todo, onEdit, onDelete, onComplete, onUncomplete }: any) {
     <div
       className="card p-4 transition-all"
       style={{
-        borderLeft: `3px solid ${todo.isCompleted ? '#22c55e' : isOverdue ? '#ef4444' : isCCTodo ? '#f59e0b' : '#8b5cf6'}`,
-        opacity: todo.isCompleted ? 0.75 : 1,
+        borderLeft: `3.5px solid ${todo.isCompleted ? '#22c55e' : isOverdue ? '#ef4444' : isCCTodo ? '#f59e0b' : '#8b5cf6'}`,
+        opacity: todo.isCompleted ? 0.6 : 1,
       }}
     >
       <div className="flex items-start gap-3">
@@ -52,33 +52,31 @@ function TodoItem({ todo, onEdit, onDelete, onComplete, onUncomplete }: any) {
           className="mt-0.5 flex-shrink-0 transition-colors"
           style={{ color: todo.isCompleted ? '#22c55e' : '#636878' }}
         >
-          {todo.isCompleted
-            ? <CheckCircle2 size={22} />
-            : <Circle size={22} />}
+          {todo.isCompleted ? <CheckCircle2 size={24} /> : <Circle size={24} />}
         </button>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-base">{getCategoryEmoji(todo.category)}</span>
-            <span className={`font-semibold ${todo.isCompleted ? 'line-through muted' : ''}`}>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xl">{getCategoryEmoji(todo.category)}</span>
+            <span className={`font-semibold text-base ${todo.isCompleted ? 'line-through muted' : ''}`}>
               {todo.title}
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1">
             {todo.amount > 0 && (
-              <span className="text-sm font-medium" style={{ color: isCCTodo ? '#f59e0b' : '#8b5cf6' }}>
+              <span className="text-sm font-bold" style={{ color: isCCTodo ? '#f59e0b' : '#8b5cf6' }}>
                 {money(todo.amount)}
               </span>
             )}
             {todo.dueDate && (
-              <span className={`text-xs flex items-center gap-1 ${isOverdue && !todo.isCompleted ? 'text-red-400' : 'muted'}`}>
-                {isOverdue && !todo.isCompleted && <AlertCircle size={11} />}
-                Due {todo.dueDate}{['st', 'nd', 'rd'][todo.dueDate - 1] || 'th'}
+              <span className={`text-xs flex items-center gap-1 font-medium ${isOverdue && !todo.isCompleted ? 'text-red-400' : 'muted'}`}>
+                {isOverdue && !todo.isCompleted && <AlertCircle size={12} />}
+                Due {todo.dueDate}{['st', 'nd', 'rd'][((todo.dueDate + 90) % 100 - 10) % 10 - 1] || 'th'}
               </span>
             )}
             <span
-              className="badge text-xs"
+              className="badge text-[10px]"
               style={{
                 background: isCCTodo ? 'rgba(245,158,11,0.15)' : 'rgba(139,92,246,0.15)',
                 color: isCCTodo ? '#f59e0b' : '#a78bfa',
@@ -88,41 +86,41 @@ function TodoItem({ todo, onEdit, onDelete, onComplete, onUncomplete }: any) {
             </span>
             {isCCTodo && todo.linkedCreditCardId && (
               <span className="text-xs flex items-center gap-1 muted">
-                <CreditCard size={10} />
+                <CreditCard size={11} />
                 {todo.linkedCreditCardId.cardName}
                 {todo.linkedCreditCardId.last4 ? ` ···${todo.linkedCreditCardId.last4}` : ''}
               </span>
             )}
             {todo.isCompleted && (
-              <span className="text-xs" style={{ color: '#22c55e' }}>✓ Paid</span>
+              <span className="text-xs font-semibold" style={{ color: '#22c55e' }}>✓ Paid</span>
             )}
           </div>
 
           {todo.description && (
-            <p className="text-xs muted mt-1">{todo.description}</p>
+            <p className="text-xs muted mt-2 font-medium">{todo.description}</p>
           )}
-        </div>
 
-        <div className="flex gap-1 flex-shrink-0">
-          {!todo.isCompleted && (
-            <button
-              onClick={() => onComplete(todo)}
-              className="btn text-xs px-3 py-1.5 flex items-center gap-1"
-              style={{
-                background: isCCTodo ? 'rgba(245,158,11,0.15)' : 'rgba(34,197,94,0.15)',
-                color: isCCTodo ? '#f59e0b' : '#22c55e',
-                borderRadius: 8,
-              }}
-            >
-              <Check size={12} /> {isCCTodo ? 'Pay Bill' : 'Mark Paid'}
+          {/* Action Buttons for Mobile */}
+          <div className="flex gap-2 mt-3">
+            {!todo.isCompleted && (
+              <button
+                onClick={() => onComplete(todo)}
+                className="btn text-xs px-4 py-2 flex items-center gap-1 font-semibold flex-1"
+                style={{
+                  background: isCCTodo ? 'rgba(245,158,11,0.15)' : 'rgba(34,197,94,0.15)',
+                  color: isCCTodo ? '#f59e0b' : '#22c55e',
+                }}
+              >
+                <Check size={14} /> {isCCTodo ? 'Pay Bill' : 'Mark Paid'}
+              </button>
+            )}
+            <button onClick={() => onEdit(todo)} className="btn btn-secondary px-3 py-2">
+              <Edit2 size={14} />
             </button>
-          )}
-          <button onClick={() => onEdit(todo)} className="btn btn-ghost btn-icon">
-            <Edit2 size={14} />
-          </button>
-          <button onClick={() => onDelete(todo)} className="btn btn-ghost btn-icon">
-            <Trash2 size={14} style={{ color: '#f43f5e' }} />
-          </button>
+            <button onClick={() => onDelete(todo)} className="btn btn-secondary px-3 py-2">
+              <Trash2 size={14} style={{ color: '#f43f5e' }} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -168,18 +166,15 @@ function TodoFormModal({ open, onClose, onSave, initial }: any) {
   const isCCCategory = form.category === 'Credit Card';
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <div className="p-6 max-w-md w-full">
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-lg font-bold">{initial ? 'Edit Task' : 'Add Monthly Task'}</h2>
-          <button onClick={onClose} className="btn btn-ghost btn-icon"><X size={18} /></button>
-        </div>
+    <Modal open={open} onClose={onClose} fullScreen>
+      <div className="p-5 max-w-md mx-auto w-full">
+        <h2 className="text-xl font-bold mb-5 text-center">{initial ? 'Edit Task' : 'Add Monthly Task'}</h2>
 
         <div className="space-y-4">
           <div>
             <label className="label">Title *</label>
             <input
-              className="input"
+              className="input text-lg"
               placeholder="e.g. Electricity Bill"
               value={form.title}
               onChange={(e) => f('title', e.target.value)}
@@ -193,15 +188,16 @@ function TodoFormModal({ open, onClose, onSave, initial }: any) {
                 <button
                   key={c.label}
                   onClick={() => f('category', c.label)}
-                  className="flex flex-col items-center gap-1 p-2 rounded-xl border text-xs transition-all"
+                  className="cat-chip"
                   style={{
                     borderColor: form.category === c.label ? (c.label === 'Credit Card' ? '#f59e0b' : '#8b5cf6') : '#1e2130',
                     background: form.category === c.label ? (c.label === 'Credit Card' ? 'rgba(245,158,11,0.15)' : 'rgba(139,92,246,0.15)') : 'transparent',
                     color: form.category === c.label ? (c.label === 'Credit Card' ? '#f59e0b' : '#a78bfa') : '#8b92a5',
+                    minHeight: 72,
                   }}
                 >
-                  <span className="text-lg">{c.emoji}</span>
-                  <span>{c.label}</span>
+                  <span className="text-2xl">{c.emoji}</span>
+                  <span className="text-xs font-semibold">{c.label}</span>
                 </button>
               ))}
             </div>
@@ -210,18 +206,18 @@ function TodoFormModal({ open, onClose, onSave, initial }: any) {
           {/* Credit Card selector — only when category is Credit Card */}
           {isCCCategory && (
             <div
-              className="rounded-xl p-4"
-              style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}
+              className="rounded-2xl p-4"
+              style={{ background: 'rgba(245,158,11,0.08)', border: '1.5px solid rgba(245,158,11,0.25)' }}
             >
               <label className="label mb-2" style={{ color: '#f59e0b' }}>
                 <CreditCard size={14} style={{ display: 'inline', marginRight: 4 }} />
                 Which Credit Card?
               </label>
               {creditCards.length === 0 ? (
-                <p className="text-xs text-amber-400">No credit cards found. Add one in Credit Cards section.</p>
+                <p className="text-sm text-amber-400">No credit cards found. Add one in Credit Cards section.</p>
               ) : (
                 <select
-                  className="input"
+                  className="input font-medium"
                   value={form.linkedCreditCardId}
                   onChange={(e) => f('linkedCreditCardId', e.target.value)}
                 >
@@ -233,7 +229,7 @@ function TodoFormModal({ open, onClose, onSave, initial }: any) {
                   ))}
                 </select>
               )}
-              <p className="text-xs mt-2" style={{ color: '#f59e0b' }}>
+              <p className="text-xs mt-2 font-medium" style={{ color: '#f59e0b' }}>
                 💡 When you "Pay Bill", the outstanding balance will be updated automatically.
               </p>
             </div>
@@ -276,10 +272,10 @@ function TodoFormModal({ open, onClose, onSave, initial }: any) {
         </div>
 
         <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="btn btn-secondary flex-1">Cancel</button>
+          <button onClick={onClose} className="btn btn-secondary flex-1 py-3.5">Cancel</button>
           <button
             onClick={() => onSave({ ...form, linkedCreditCardId: isCCCategory ? form.linkedCreditCardId || undefined : undefined })}
-            className="btn btn-primary flex-1"
+            className="btn btn-primary flex-1 py-3.5"
           >
             {initial ? 'Update' : 'Add Task'}
           </button>
@@ -314,45 +310,41 @@ function CompleteModal({ open, onClose, onConfirm, todo, accounts }: any) {
   const isPartial = isCCTodo && linkedCard && amountNum < outstanding && amountNum > 0;
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <div className="p-6 max-w-sm w-full">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold">
-            {isCCTodo ? '💳 Pay Credit Card Bill' : '✅ Mark as Paid'}
-          </h2>
-          <button onClick={onClose} className="btn btn-ghost btn-icon"><X size={18} /></button>
-        </div>
+    <Modal open={open} onClose={onClose} fullScreen>
+      <div className="p-5 max-w-sm mx-auto w-full">
+        <h2 className="text-xl font-bold text-center mb-5">
+          {isCCTodo ? '💳 Pay Credit Card Bill' : '✅ Mark as Paid'}
+        </h2>
 
         {/* Todo info card */}
         <div
-          className="card p-4 mb-4"
+          className="card p-5 mb-5 text-center"
           style={{
             background: isCCTodo ? 'rgba(245,158,11,0.08)' : 'rgba(34,197,94,0.08)',
             borderColor: isCCTodo ? 'rgba(245,158,11,0.2)' : 'rgba(34,197,94,0.2)',
           }}
         >
-          <div className="font-semibold">{todo.title}</div>
+          <div className="font-bold text-lg mb-1">{todo.title}</div>
           {isCCTodo && linkedCard && (
-            <div className="flex items-center gap-2 mt-1">
-              <CreditCard size={13} style={{ color: '#f59e0b' }} />
-              <span className="text-sm muted">
+            <div className="flex flex-col items-center gap-1 mt-1">
+              <span className="text-sm font-medium">
                 {linkedCard.cardName} {linkedCard.last4 ? `···${linkedCard.last4}` : ''}
               </span>
-              <span className="text-sm font-medium" style={{ color: '#f43f5e' }}>
+              <span className="text-base font-bold" style={{ color: '#f43f5e' }}>
                 Outstanding: {money(outstanding)}
               </span>
             </div>
           )}
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Amount */}
           <div>
             <label className="label">
               {isCCTodo ? 'Payment Amount' : 'Amount Paid'} (₹)
             </label>
             <input
-              className="input"
+              className="input text-lg font-bold"
               type="number"
               value={amount}
               min="0.01"
@@ -360,19 +352,19 @@ function CompleteModal({ open, onClose, onConfirm, todo, accounts }: any) {
               onChange={(e) => setAmount(e.target.value)}
             />
             {isCCTodo && linkedCard && (
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 mt-3">
                 <button
                   onClick={() => setAmount(String(outstanding))}
-                  className="text-xs px-2 py-1 rounded-lg transition-all"
-                  style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' }}
+                  className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
+                  style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1.5px solid rgba(34,197,94,0.3)' }}
                 >
                   Full: {money(outstanding)}
                 </button>
                 {outstanding > 0 && (
                   <button
                     onClick={() => setAmount(String(Math.ceil(outstanding / 2)))}
-                    className="text-xs px-2 py-1 rounded-lg transition-all"
-                    style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}
+                    className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
+                    style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1.5px solid rgba(245,158,11,0.3)' }}
                   >
                     Half: {money(Math.ceil(outstanding / 2))}
                   </button>
@@ -386,24 +378,28 @@ function CompleteModal({ open, onClose, onConfirm, todo, accounts }: any) {
             <label className="label">
               {isCCTodo ? 'Pay From Account' : 'Paid From Account'}
             </label>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
+            <div className="space-y-2 max-h-60 overflow-y-auto">
               {accounts?.map((a: any) => {
                 const isSelected = accountId === a._id;
                 return (
                   <button
                     key={a._id}
                     onClick={() => setAccountId(a._id)}
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border transition-all text-left"
+                    className="acc-row w-full"
                     style={{
                       borderColor: isSelected ? '#8b5cf6' : '#1e2130',
                       background: isSelected ? 'rgba(139,92,246,0.12)' : '#0d0f16',
                     }}
                   >
-                    <div className="flex items-center gap-2">
-                      <Building2 size={14} style={{ color: '#8b5cf6' }} />
-                      <span className="text-sm font-medium">{a.accountName}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl grid place-items-center flex-shrink-0" style={{ background: 'rgba(139,92,246,0.15)' }}>
+                        <Building2 size={18} style={{ color: '#8b5cf6' }} />
+                      </div>
+                      <div className="text-left">
+                        <div className="text-sm font-semibold">{a.accountName}</div>
+                      </div>
                     </div>
-                    <span className="text-xs font-semibold" style={{ color: a.balance >= 0 ? '#22c55e' : '#f43f5e' }}>
+                    <span className="text-sm font-bold" style={{ color: a.balance >= 0 ? '#22c55e' : '#f43f5e' }}>
                       {money(a.balance)}
                     </span>
                   </button>
@@ -411,7 +407,7 @@ function CompleteModal({ open, onClose, onConfirm, todo, accounts }: any) {
               })}
             </div>
             {(!accounts || accounts.length === 0) && (
-              <p className="text-xs text-amber-400">No accounts found. Add an account first.</p>
+              <p className="text-sm text-amber-400 mt-2">No accounts found. Add an account first.</p>
             )}
           </div>
         </div>
@@ -419,7 +415,7 @@ function CompleteModal({ open, onClose, onConfirm, todo, accounts }: any) {
         {/* Overpayment warning */}
         {isOverpayment && (
           <div
-            className="rounded-xl p-3 mt-3 text-xs"
+            className="rounded-xl p-3 mt-4 text-xs font-semibold"
             style={{ background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)', color: '#f43f5e' }}
           >
             ⚠️ Payment {money(amountNum)} exceeds outstanding {money(outstanding)}. Please reduce the amount.
@@ -429,32 +425,32 @@ function CompleteModal({ open, onClose, onConfirm, todo, accounts }: any) {
         {/* Partial payment note */}
         {isPartial && (
           <div
-            className="rounded-xl p-3 mt-3 text-xs"
+            className="rounded-xl p-3 mt-4 text-xs font-semibold"
             style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b' }}
           >
             📝 Partial payment — remaining balance will be {money(outstanding - amountNum)}.
-            The task will stay as pending until fully paid.
+            The task will stay pending.
           </div>
         )}
 
         <div
-          className="rounded-xl p-3 mt-3 text-xs muted"
+          className="rounded-xl p-3 mt-4 text-xs muted font-medium text-center"
           style={{ background: '#0d0f16', border: '1px solid #1e2130' }}
         >
           {isCCTodo
-            ? '✓ Account balance will decrease  ✓ CC outstanding will decrease'
-            : '✓ Account balance will decrease  ✓ Expense will be recorded'}
+            ? '✓ Account balance decreases  ✓ CC outstanding decreases'
+            : '✓ Account balance decreases  ✓ Expense recorded'}
         </div>
 
-        <div className="flex gap-3 mt-4">
-          <button onClick={onClose} className="btn btn-secondary flex-1">Cancel</button>
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="btn btn-secondary flex-1 py-3.5">Cancel</button>
           <button
             onClick={() => onConfirm({ accountId, amount: amountNum })}
             disabled={!accountId || !amountNum || amountNum <= 0 || isOverpayment}
-            className="btn btn-primary flex-1"
+            className="btn btn-primary flex-1 py-3.5"
             style={{ opacity: (!accountId || !amountNum || amountNum <= 0 || isOverpayment) ? 0.5 : 1 }}
           >
-            <Check size={15} /> {isCCTodo ? 'Pay & Record' : 'Confirm Paid'}
+            <Check size={18} /> {isCCTodo ? 'Pay' : 'Confirm'}
           </button>
         </div>
       </div>
@@ -594,26 +590,26 @@ export default function MonthlyTodo() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-7">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Monthly To-Do</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">To-Do List</h1>
           <p className="muted mt-1 text-sm">Recurring financial payments checklist.</p>
         </div>
         <button
           onClick={() => { setEditTarget(null); setFormOpen(true); }}
-          className="btn btn-primary"
+          className="hidden md:flex btn btn-primary"
         >
           <Plus size={16} /> Add Task
         </button>
       </div>
 
       {/* Month navigator */}
-      <div className="flex items-center justify-between mb-5">
-        <button onClick={prevMonth} className="btn btn-ghost btn-icon">
+      <div className="flex items-center justify-between mb-5 bg-[#11131c] rounded-2xl p-2 border border-[#1e2130]">
+        <button onClick={prevMonth} className="btn btn-ghost btn-icon" style={{ background: '#161821' }}>
           <ChevronLeft size={20} />
         </button>
-        <h2 className="text-xl font-bold">
+        <h2 className="text-lg font-bold">
           {MONTHS[month - 1]} {year}
         </h2>
-        <button onClick={nextMonth} className="btn btn-ghost btn-icon">
+        <button onClick={nextMonth} className="btn btn-ghost btn-icon" style={{ background: '#161821' }}>
           <ChevronRight size={20} />
         </button>
       </div>
@@ -622,14 +618,14 @@ export default function MonthlyTodo() {
       {todos.length > 0 && (
         <div className="card p-5 mb-5">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-medium">
+            <span className="text-sm font-semibold">
               Completed: <strong>{data.completed}</strong> / {todos.length}
             </span>
-            <span className="text-sm font-medium" style={{ color: '#f43f5e' }}>
+            <span className="text-sm font-bold" style={{ color: '#f43f5e' }}>
               Pending: {money(data.pending || 0)}
             </span>
           </div>
-          <div className="progress-track">
+          <div className="progress-track" style={{ height: 8 }}>
             <div
               className="progress-fill"
               style={{
@@ -640,7 +636,7 @@ export default function MonthlyTodo() {
               }}
             />
           </div>
-          <div className="flex justify-between mt-2 text-xs muted">
+          <div className="flex justify-between mt-2 text-xs font-medium muted">
             <span>{completionPct}% done</span>
             {completionPct === 100 && (
               <span style={{ color: '#22c55e' }}>🎉 All paid!</span>
@@ -651,29 +647,29 @@ export default function MonthlyTodo() {
 
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => <div key={i} className="skeleton h-20 rounded-xl" />)}
+          {[1, 2, 3].map((i) => <div key={i} className="skeleton h-24 rounded-2xl" />)}
         </div>
       ) : todos.length === 0 ? (
-        <div className="card p-12 text-center">
-          <Zap size={40} className="mx-auto mb-4 muted" />
-          <div className="text-lg font-semibold mb-2">No tasks for {MONTHS[month - 1]}</div>
-          <p className="muted text-sm mb-4">Add recurring monthly payments like rent, bills, and subscriptions.</p>
+        <div className="card p-12 text-center mt-5">
+          <Zap size={48} className="mx-auto mb-4 muted" />
+          <div className="text-lg font-bold mb-2">No tasks for {MONTHS[month - 1]}</div>
+          <p className="muted text-sm mb-6">Add recurring monthly payments like rent, bills, and subscriptions.</p>
           <button
             onClick={() => { setEditTarget(null); setFormOpen(true); }}
-            className="btn btn-primary mx-auto"
+            className="btn btn-primary mx-auto py-3 px-6"
           >
             <Plus size={16} /> Add First Task
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Pending */}
           {pendingTodos.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold muted uppercase tracking-wider mb-3">
+              <h3 className="text-xs font-bold muted uppercase tracking-wider mb-3">
                 Pending ({pendingTodos.length})
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {pendingTodos.map((todo: any) => (
                   <TodoItem
                     key={todo._id}
@@ -691,10 +687,10 @@ export default function MonthlyTodo() {
           {/* Completed */}
           {completedTodos.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold muted uppercase tracking-wider mb-3">
+              <h3 className="text-xs font-bold muted uppercase tracking-wider mb-3">
                 Completed ({completedTodos.length})
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {completedTodos.map((todo: any) => (
                   <TodoItem
                     key={todo._id}
@@ -710,6 +706,11 @@ export default function MonthlyTodo() {
           )}
         </div>
       )}
+
+      {/* FAB for mobile */}
+      <button className="fab md:hidden" onClick={() => { setEditTarget(null); setFormOpen(true); }} aria-label="Add Task">
+        <Plus size={24} />
+      </button>
 
       <TodoFormModal
         open={formOpen}
@@ -727,12 +728,12 @@ export default function MonthlyTodo() {
       />
 
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
-        <div className="p-6 max-w-sm w-full">
-          <h2 className="text-lg font-bold mb-2">Remove Task?</h2>
-          <p className="muted text-sm mb-5">Delete <strong>{deleteTarget?.title}</strong>?</p>
+        <div className="p-6 max-w-sm w-full mx-auto text-center">
+          <h2 className="text-xl font-bold mb-2">Remove Task?</h2>
+          <p className="muted text-sm mb-6">Delete <strong>{deleteTarget?.title}</strong> from this month?</p>
           <div className="flex gap-3">
-            <button onClick={() => setDeleteTarget(null)} className="btn btn-secondary flex-1">Cancel</button>
-            <button onClick={handleDelete} className="btn flex-1" style={{ background: '#ef4444', color: '#fff' }}>Delete</button>
+            <button onClick={() => setDeleteTarget(null)} className="btn btn-secondary flex-1 py-3">Cancel</button>
+            <button onClick={handleDelete} className="btn flex-1 py-3" style={{ background: '#ef4444', color: '#fff' }}>Delete</button>
           </div>
         </div>
       </Modal>

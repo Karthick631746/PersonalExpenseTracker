@@ -4,7 +4,7 @@ import { money, formatDate, daysRemaining, pct } from '../lib/utils';
 import { getIcon } from '../lib/icons';
 import Modal from '../components/Modal';
 import { toast } from '../components/Toast';
-import { Plus, Pencil, Trash2, Target, Calendar, TrendingUp } from 'lucide-react';
+import { Plus, Pencil, Trash2, Target, Calendar, TrendingUp, X } from 'lucide-react';
 
 const defaultForm = {
   name: '',
@@ -23,7 +23,6 @@ const defaultContrib = {
   note: '',
 };
 
-const MILESTONE_ICONS = ['Target', 'Home', 'Car', 'Plane', 'GraduationCap', 'Heart', 'Gift', 'Wallet', 'TrendingUp', 'Shield'];
 const MILESTONE_COLORS = ['#8b5cf6', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#f97316', '#10b981'];
 
 export default function Milestones() {
@@ -103,10 +102,10 @@ export default function Milestones() {
       };
       if (editing) {
         await api.put(`/milestones/${editing._id}`, body);
-        toast('Milestone updated');
+        toast('Milestone updated', 'success');
       } else {
         await api.post('/milestones', body);
-        toast('Milestone created');
+        toast('Milestone created', 'success');
       }
       setOpen(false);
       load();
@@ -121,7 +120,7 @@ export default function Milestones() {
     if (!deleteId) return;
     try {
       await api.delete(`/milestones/${deleteId}`);
-      toast('Milestone deleted');
+      toast('Milestone deleted', 'success');
       setDeleteId(null);
       load();
     } catch {
@@ -139,7 +138,7 @@ export default function Milestones() {
         ...contribForm,
         amount: Number(contribForm.amount),
       });
-      toast('Contribution added');
+      toast('Contribution added', 'success');
       setContribForm(defaultContrib);
       setViewingMilestone(res.data.milestone);
       await loadContributions(viewingMilestone._id);
@@ -154,7 +153,7 @@ export default function Milestones() {
   const deleteContribution = async (cid: string) => {
     try {
       const res = await api.delete(`/milestones/${viewingMilestone._id}/contributions/${cid}`);
-      toast('Contribution removed');
+      toast('Contribution removed', 'success');
       if (res.data.milestone) setViewingMilestone(res.data.milestone);
       await loadContributions(viewingMilestone._id);
       load();
@@ -170,24 +169,24 @@ export default function Milestones() {
     <div className="fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Savings Milestones</h1>
+          <h1 className="text-2xl font-bold">Milestones</h1>
           <p className="muted text-sm mt-1">Track your savings goals.</p>
         </div>
-        <button className="btn btn-primary" onClick={openNew}>
+        <button className="hidden md:flex btn btn-primary" onClick={openNew}>
           <Plus size={16} /> Add Milestone
         </button>
       </div>
 
       {/* Summary */}
       {milestones.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
           {[
-            { label: 'Total Targets', value: totalTarget, color: '#8b5cf6' },
-            { label: 'Total Saved', value: totalSaved, color: '#22c55e' },
-            { label: 'Overall Progress', value: pct(totalSaved, totalTarget), color: '#f59e0b', suffix: '%' },
+            { label: 'Targets', value: totalTarget, color: '#8b5cf6' },
+            { label: 'Saved', value: totalSaved, color: '#22c55e' },
+            { label: 'Progress', value: pct(totalSaved, totalTarget), color: '#f59e0b', suffix: '%' },
           ].map(({ label, value, color, suffix }) => (
             <div className="stat-card text-center" key={label}>
-              <div className="text-xs muted uppercase tracking-wide mb-2">{label}</div>
+              <div className="text-xs muted uppercase tracking-wide mb-2 font-semibold">{label}</div>
               <div className="text-xl font-bold" style={{ color }}>
                 {suffix ? `${value}${suffix}` : money(value)}
               </div>
@@ -203,10 +202,10 @@ export default function Milestones() {
       ) : milestones.length === 0 ? (
         <div className="card p-12 text-center">
           <Target size={48} className="mx-auto mb-4 muted" />
-          <div className="font-semibold mb-1">No milestones yet</div>
+          <div className="font-semibold mb-1 text-lg">No milestones yet</div>
           <div className="muted text-sm mb-5">Set a savings goal and track your progress.</div>
-          <button className="btn btn-primary" onClick={openNew}>
-            <Plus size={14} /> Add Milestone
+          <button className="btn btn-primary mx-auto" onClick={openNew}>
+            <Plus size={16} /> Add Milestone
           </button>
         </div>
       ) : (
@@ -221,7 +220,7 @@ export default function Milestones() {
             const MIcon = getIcon(m.icon || 'Target');
 
             return (
-              <div key={m._id} className="card card-hover p-5">
+              <div key={m._id} className="card card-hover p-4 md:p-5">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -232,9 +231,9 @@ export default function Milestones() {
                       <MIcon size={20} style={{ color: m.color || '#8b5cf6' }} />
                     </div>
                     <div>
-                      <div className="font-semibold">{m.name}</div>
+                      <div className="font-semibold text-sm md:text-base">{m.name}</div>
                       <span
-                        className="badge text-xs"
+                        className="badge text-xs mt-0.5"
                         style={{
                           background: m.status === 'completed' ? 'rgba(34,197,94,0.15)' : 'rgba(139,92,246,0.15)',
                           color: m.status === 'completed' ? '#22c55e' : '#8b5cf6',
@@ -245,19 +244,19 @@ export default function Milestones() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <button className="btn btn-ghost btn-icon" onClick={() => openEdit(m)}><Pencil size={13} /></button>
-                    <button className="btn btn-danger btn-icon" onClick={() => setDeleteId(m._id)}><Trash2 size={13} /></button>
+                    <button className="btn btn-ghost btn-icon" onClick={() => openEdit(m)}><Pencil size={14} /></button>
+                    <button className="btn btn-ghost btn-icon" onClick={() => setDeleteId(m._id)}><Trash2 size={14} style={{ color: '#f43f5e' }} /></button>
                   </div>
                 </div>
 
                 {/* Amounts */}
                 <div className="flex justify-between items-baseline mb-2">
-                  <div className="text-2xl font-bold">{money(m.savedAmount)}</div>
-                  <div className="muted text-sm">of {money(m.targetAmount)}</div>
+                  <div className="text-xl md:text-2xl font-bold">{money(m.savedAmount)}</div>
+                  <div className="muted text-xs md:text-sm">of {money(m.targetAmount)}</div>
                 </div>
 
                 {/* Progress bar */}
-                <div className="progress-track mb-1">
+                <div className="progress-track mb-1.5" style={{ height: 8 }}>
                   <div
                     className="progress-fill"
                     style={{
@@ -266,13 +265,13 @@ export default function Milestones() {
                     }}
                   />
                 </div>
-                <div className="text-xs muted mb-4">{progress}% complete · {money(remaining)} remaining</div>
+                <div className="text-xs muted mb-4 font-medium">{progress}% complete · {money(remaining)} remaining</div>
 
                 {/* Dates */}
-                <div className="rounded-xl p-3 space-y-1.5" style={{ background: '#0d0f16' }}>
+                <div className="rounded-xl p-3 space-y-2" style={{ background: '#0d0f16' }}>
                   {m.targetDate && (
                     <div className="flex justify-between text-xs">
-                      <span className="muted flex items-center gap-1"><Calendar size={11} />Target date</span>
+                      <span className="muted flex items-center gap-1.5"><Calendar size={12} />Target date</span>
                       <span className="font-medium">{formatDate(m.targetDate)}</span>
                     </div>
                   )}
@@ -285,8 +284,8 @@ export default function Milestones() {
                     </div>
                   )}
                   {requiredMonthly && m.status !== 'completed' && Number(remaining) > 0 && (
-                    <div className="flex justify-between text-xs pt-1.5 border-t border-[#1e2130]">
-                      <span className="muted flex items-center gap-1"><TrendingUp size={11} />Monthly needed</span>
+                    <div className="flex justify-between text-xs pt-2 border-t border-[#1e2130]">
+                      <span className="muted flex items-center gap-1.5"><TrendingUp size={12} />Monthly needed</span>
                       <span className="font-semibold" style={{ color: '#22c55e' }}>
                         {money(requiredMonthly)}/mo
                       </span>
@@ -295,10 +294,11 @@ export default function Milestones() {
                 </div>
 
                 <button
-                  className="btn btn-secondary w-full mt-3 text-sm"
+                  className="btn w-full mt-3 text-sm py-2.5 font-semibold"
+                  style={{ background: 'rgba(255,255,255,0.06)', color: '#eef0f6' }}
                   onClick={() => openView(m)}
                 >
-                  <Plus size={13} /> Add Contribution
+                  <Plus size={14} /> Add Contribution
                 </button>
               </div>
             );
@@ -306,104 +306,112 @@ export default function Milestones() {
         </div>
       )}
 
+      {/* FAB for mobile */}
+      <button className="fab md:hidden" onClick={openNew} aria-label="Add Milestone">
+        <Plus size={24} />
+      </button>
+
       {/* Add/Edit Milestone Modal */}
       <Modal
         open={open}
         title={editing ? 'Edit Milestone' : 'New Milestone'}
         onClose={() => setOpen(false)}
+        fullScreen
       >
-        <form onSubmit={save} className="space-y-4">
-          <div>
-            <label className="label">Name *</label>
-            <input
-              className="input"
-              placeholder="e.g. Emergency Fund"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="p-5 max-w-md mx-auto w-full">
+          <form onSubmit={save} className="space-y-4">
             <div>
-              <label className="label">Target Amount *</label>
+              <label className="label">Name *</label>
               <input
                 className="input"
-                type="number"
-                placeholder="500000"
-                min="1"
-                value={form.targetAmount}
-                onChange={(e) => setForm({ ...form, targetAmount: e.target.value })}
+                placeholder="e.g. Emergency Fund"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required
               />
             </div>
-            <div>
-              <label className="label">Already Saved</label>
-              <input
-                className="input"
-                type="number"
-                placeholder="0"
-                min="0"
-                value={form.savedAmount}
-                onChange={(e) => setForm({ ...form, savedAmount: e.target.value })}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">Target Date</label>
-              <input
-                className="input"
-                type="date"
-                value={form.targetDate}
-                onChange={(e) => setForm({ ...form, targetDate: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="label">Monthly Target</label>
-              <input
-                className="input"
-                type="number"
-                placeholder="Optional"
-                min="0"
-                value={form.monthlyTarget}
-                onChange={(e) => setForm({ ...form, monthlyTarget: e.target.value })}
-              />
-            </div>
-          </div>
-          <div>
-            <label className="label">Description</label>
-            <input
-              className="input"
-              placeholder="What is this milestone for?"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
-          </div>
-          {/* Color */}
-          <div>
-            <label className="label">Color</label>
-            <div className="flex gap-2 flex-wrap">
-              {MILESTONE_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setForm({ ...form, color: c })}
-                  style={{
-                    width: 28, height: 28, borderRadius: '50%', background: c,
-                    border: form.color === c ? '3px solid white' : '3px solid transparent',
-                    cursor: 'pointer', outline: 'none',
-                  }}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Target Amount *</label>
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="500000"
+                  min="1"
+                  value={form.targetAmount}
+                  onChange={(e) => setForm({ ...form, targetAmount: e.target.value })}
+                  required
                 />
-              ))}
+              </div>
+              <div>
+                <label className="label">Already Saved</label>
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="0"
+                  min="0"
+                  value={form.savedAmount}
+                  onChange={(e) => setForm({ ...form, savedAmount: e.target.value })}
+                />
+              </div>
             </div>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" className="btn btn-secondary flex-1" onClick={() => setOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary flex-1" disabled={saving}>
-              {saving ? 'Saving…' : editing ? 'Update' : 'Create Milestone'}
-            </button>
-          </div>
-        </form>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Target Date</label>
+                <input
+                  className="input"
+                  type="date"
+                  value={form.targetDate}
+                  onChange={(e) => setForm({ ...form, targetDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="label">Monthly Target</label>
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="Optional"
+                  min="0"
+                  value={form.monthlyTarget}
+                  onChange={(e) => setForm({ ...form, monthlyTarget: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="label">Description</label>
+              <input
+                className="input"
+                placeholder="What is this milestone for?"
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
+            </div>
+            {/* Color */}
+            <div>
+              <label className="label">Color</label>
+              <div className="flex gap-2 flex-wrap">
+                {MILESTONE_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setForm({ ...form, color: c })}
+                    style={{
+                      width: 32, height: 32, borderRadius: '50%', background: c,
+                      border: form.color === c ? '3px solid white' : '3px solid transparent',
+                      cursor: 'pointer', outline: 'none',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-3 pt-4">
+              <button type="button" className="btn btn-secondary flex-1 py-3" onClick={() => setOpen(false)}>Cancel</button>
+              <button type="submit" className="btn btn-primary flex-1 py-3" disabled={saving}>
+                {saving ? 'Saving…' : editing ? 'Update' : 'Create'}
+              </button>
+            </div>
+          </form>
+        </div>
       </Modal>
 
       {/* Contributions Modal */}
@@ -412,16 +420,17 @@ export default function Milestones() {
         title={viewingMilestone ? `${viewingMilestone.name} — Contributions` : ''}
         onClose={() => setViewingMilestone(null)}
         size="md"
+        fullScreen
       >
         {viewingMilestone && (
-          <>
+          <div className="p-5 max-w-md mx-auto w-full">
             {/* Progress summary */}
-            <div className="card p-4 mb-5" style={{ background: '#0d0f16' }}>
+            <div className="card p-5 mb-5" style={{ background: '#0d0f16' }}>
               <div className="flex justify-between mb-2">
                 <span className="text-sm font-semibold">{money(viewingMilestone.savedAmount)}</span>
-                <span className="muted text-sm">of {money(viewingMilestone.targetAmount)}</span>
+                <span className="muted text-sm font-medium">of {money(viewingMilestone.targetAmount)}</span>
               </div>
-              <div className="progress-track">
+              <div className="progress-track" style={{ height: 8 }}>
                 <div
                   className="progress-fill"
                   style={{
@@ -430,19 +439,19 @@ export default function Milestones() {
                   }}
                 />
               </div>
-              <div className="text-xs muted mt-1">
+              <div className="text-xs muted mt-2 font-medium">
                 {pct(viewingMilestone.savedAmount, viewingMilestone.targetAmount)}% complete
               </div>
             </div>
 
             {/* Add contribution */}
-            <form onSubmit={addContribution} className="flex gap-2 mb-5 flex-wrap">
+            <form onSubmit={addContribution} className="flex gap-2 mb-5">
               <input
                 className="input"
                 type="number"
                 placeholder="Amount"
                 min="1"
-                style={{ flex: 1, minWidth: 100 }}
+                style={{ flex: 1 }}
                 value={contribForm.amount}
                 onChange={(e) => setContribForm({ ...contribForm, amount: e.target.value })}
                 required
@@ -450,53 +459,54 @@ export default function Milestones() {
               <input
                 className="input"
                 type="date"
-                style={{ flex: 1, minWidth: 140 }}
+                style={{ flex: 1 }}
                 value={contribForm.date}
                 onChange={(e) => setContribForm({ ...contribForm, date: e.target.value })}
               />
-              <button type="submit" className="btn btn-primary" disabled={contribSaving}>
-                <Plus size={14} /> {contribSaving ? '…' : 'Add'}
+              <button type="submit" className="btn btn-primary px-4" disabled={contribSaving}>
+                <Plus size={16} />
               </button>
             </form>
 
             {/* Contributions list */}
-            <div className="space-y-2 max-h-72 overflow-y-auto">
+            <div className="space-y-2">
               {contributions.length === 0 ? (
                 <div className="text-center py-6 muted text-sm">No contributions yet.</div>
               ) : (
                 contributions.map((c) => (
                   <div
                     key={c._id}
-                    className="flex items-center justify-between py-2 px-3 rounded-xl"
-                    style={{ background: '#0d0f16' }}
+                    className="flex items-center justify-between p-3 rounded-xl"
+                    style={{ background: '#0d0f16', border: '1px solid #1e2130' }}
                   >
                     <div>
                       <div className="text-sm font-semibold" style={{ color: '#22c55e' }}>
                         +{money(c.amount)}
                       </div>
-                      <div className="text-xs muted">{formatDate(c.date)}{c.note ? ` · ${c.note}` : ''}</div>
+                      <div className="text-xs muted mt-0.5">{formatDate(c.date)}{c.note ? ` · ${c.note}` : ''}</div>
                     </div>
                     <button
-                      className="btn btn-danger btn-icon"
-                      style={{ padding: '5px' }}
+                      className="btn btn-ghost btn-icon"
                       onClick={() => deleteContribution(c._id)}
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={16} style={{ color: '#f43f5e' }} />
                     </button>
                   </div>
                 ))
               )}
             </div>
-          </>
+          </div>
         )}
       </Modal>
 
       {/* Delete Confirm */}
       <Modal open={!!deleteId} title="Delete Milestone" onClose={() => setDeleteId(null)} size="sm">
-        <p className="muted text-sm mb-6">Delete this milestone and all its contributions?</p>
-        <div className="flex gap-3">
-          <button className="btn btn-secondary flex-1" onClick={() => setDeleteId(null)}>Cancel</button>
-          <button className="btn btn-danger flex-1" onClick={doDelete}>Delete</button>
+        <div className="p-5 max-w-sm mx-auto">
+          <p className="muted text-sm mb-6">Delete this milestone and all its contributions?</p>
+          <div className="flex gap-3">
+            <button className="btn btn-secondary flex-1 py-3" onClick={() => setDeleteId(null)}>Cancel</button>
+            <button className="btn btn-danger flex-1 py-3" onClick={doDelete}>Delete</button>
+          </div>
         </div>
       </Modal>
     </div>

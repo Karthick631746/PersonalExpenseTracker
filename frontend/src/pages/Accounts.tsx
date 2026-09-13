@@ -5,13 +5,16 @@ import { toast } from '../components/Toast';
 import Modal from '../components/Modal';
 import CategoryIcon from '../components/CategoryIcon';
 import {
-  Building2, Wallet, Plus, Edit2, Trash2, ChevronRight, ArrowUpRight,
-  ArrowDownRight, Eye, X, TrendingUp, TrendingDown, CreditCard,
+  Building2, Wallet, Plus, Edit2, Trash2,
+  ArrowUpRight, ArrowDownRight, Eye, X, TrendingUp, TrendingDown,
   Landmark, Smartphone, Banknote, CircleDollarSign,
 } from 'lucide-react';
 
+/* ─────────────────────────── constants ─────────────────────────── */
+
 const ACCOUNT_TYPES = [
-  'Savings Account', 'Salary Account', 'Current Account', 'Digital Wallet', 'Cash', 'Other',
+  'Savings Account', 'Salary Account', 'Current Account',
+  'Digital Wallet', 'Cash', 'Other',
 ];
 
 const ACCOUNT_TYPE_ICONS: Record<string, any> = {
@@ -24,7 +27,8 @@ const ACCOUNT_TYPE_ICONS: Record<string, any> = {
 };
 
 const ACCOUNT_COLORS = [
-  '#8b5cf6', '#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#14b8a6',
+  '#8b5cf6', '#22c55e', '#3b82f6', '#f59e0b',
+  '#ef4444', '#06b6d4', '#ec4899', '#14b8a6',
 ];
 
 const FILTER_OPTIONS = [
@@ -34,92 +38,122 @@ const FILTER_OPTIONS = [
   { label: 'All Time', value: 'all' },
 ];
 
+/* ───────────────────────── AccountCard ─────────────────────────── */
+
 function AccountCard({ acc, onEdit, onDelete, onView }: any) {
   const Icon = ACCOUNT_TYPE_ICONS[acc.accountType] || Building2;
   const isPositive = acc.balance >= 0;
 
   return (
     <div
-      className="card p-0 overflow-hidden hover:scale-[1.01] transition-transform duration-200"
-      style={{ borderColor: `${acc.color}30` }}
+      className="w-full rounded-2xl overflow-hidden mb-3 slide-up"
+      style={{
+        background: `linear-gradient(145deg, ${acc.color}dd, ${acc.color}99)`,
+        boxShadow: `0 8px 32px ${acc.color}40`,
+      }}
     >
-      {/* Gradient header */}
-      <div
-        className="p-5 pb-4"
-        style={{
-          background: `linear-gradient(135deg, ${acc.color}20, ${acc.color}08)`,
-          borderBottom: `1px solid ${acc.color}20`,
-        }}
-      >
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
+      {/* ── Card Header ── */}
+      <div className="p-5 pb-3">
+        {/* Top row: icon + name + actions */}
+        <div className="flex items-start justify-between gap-2">
+          {/* Icon + name */}
+          <div className="flex items-center gap-3 min-w-0">
             <div
-              className="w-11 h-11 rounded-xl grid place-items-center"
-              style={{ background: `${acc.color}25` }}
+              className="w-11 h-11 rounded-xl grid place-items-center shrink-0"
+              style={{ background: 'rgba(255,255,255,0.20)' }}
             >
-              <Icon size={20} style={{ color: acc.color }} />
+              <Icon size={20} color="#fff" />
             </div>
-            <div>
-              <div className="font-semibold text-base">{acc.accountName}</div>
-              <div className="text-xs muted">{acc.bankName || acc.accountType}</div>
+            <div className="min-w-0">
+              <div className="font-bold text-base text-white leading-tight truncate">
+                {acc.accountName}
+              </div>
+              <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                {acc.bankName || acc.accountType}
+              </div>
             </div>
           </div>
-          <div className="flex gap-1">
+
+          {/* Action buttons */}
+          <div className="flex gap-0.5 shrink-0">
             <button
               onClick={() => onView(acc)}
-              className="btn btn-ghost btn-icon"
+              className="w-9 h-9 rounded-xl grid place-items-center transition-all active:scale-90"
+              style={{ background: 'rgba(255,255,255,0.15)' }}
               title="View transactions"
             >
-              <Eye size={15} />
+              <Eye size={15} color="#fff" />
             </button>
-            <button onClick={() => onEdit(acc)} className="btn btn-ghost btn-icon" title="Edit">
-              <Edit2 size={15} />
+            <button
+              onClick={() => onEdit(acc)}
+              className="w-9 h-9 rounded-xl grid place-items-center transition-all active:scale-90"
+              style={{ background: 'rgba(255,255,255,0.15)' }}
+              title="Edit"
+            >
+              <Edit2 size={15} color="#fff" />
             </button>
-            <button onClick={() => onDelete(acc)} className="btn btn-ghost btn-icon" title="Delete">
-              <Trash2 size={15} style={{ color: '#f43f5e' }} />
+            <button
+              onClick={() => onDelete(acc)}
+              className="w-9 h-9 rounded-xl grid place-items-center transition-all active:scale-90"
+              style={{ background: 'rgba(255,255,255,0.15)' }}
+              title="Delete"
+            >
+              <Trash2 size={15} color="#fff" />
             </button>
           </div>
         </div>
 
+        {/* Account number */}
         {acc.accountNumberLast4 && (
-          <div className="text-xs muted mb-3">•••• {acc.accountNumberLast4}</div>
+          <div className="text-xs mt-3" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            •••• •••• •••• {acc.accountNumberLast4}
+          </div>
         )}
 
-        <div>
-          <div className="text-xs muted mb-1">Available Balance</div>
-          <div
-            className="text-2xl font-bold"
-            style={{ color: isPositive ? '#ffffff' : '#f43f5e' }}
-          >
-            {!isPositive && '-'}{money(Math.abs(acc.balance))}
+        {/* Balance */}
+        <div className="mt-4">
+          <div className="text-xs mb-1 uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            Available Balance
+          </div>
+          <div className="text-3xl font-bold text-white">
+            {!isPositive && <span style={{ color: '#fca5a5' }}>−</span>}
+            {money(Math.abs(acc.balance))}
           </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 divide-x divide-[#1e2130]">
+      {/* ── Income / Expense Stats ── */}
+      <div
+        className="grid grid-cols-2 divide-x mt-3"
+        style={{
+          background: 'rgba(0,0,0,0.22)',
+          divideColor: 'rgba(255,255,255,0.1)',
+        }}
+      >
         <div className="p-4 text-center">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <TrendingUp size={12} style={{ color: '#22c55e' }} />
-            <span className="text-xs muted">Income</span>
+            <TrendingUp size={12} color="#86efac" />
+            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Income</span>
           </div>
-          <div className="text-sm font-semibold" style={{ color: '#22c55e' }}>
+          <div className="text-sm font-bold" style={{ color: '#86efac' }}>
             +{money(acc.monthlyIncome || 0)}
           </div>
         </div>
-        <div className="p-4 text-center">
+        <div className="p-4 text-center" style={{ borderLeft: '1px solid rgba(255,255,255,0.12)' }}>
           <div className="flex items-center justify-center gap-1 mb-1">
-            <TrendingDown size={12} style={{ color: '#f43f5e' }} />
-            <span className="text-xs muted">Expenses</span>
+            <TrendingDown size={12} color="#fca5a5" />
+            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Expenses</span>
           </div>
-          <div className="text-sm font-semibold" style={{ color: '#f43f5e' }}>
-            -{money(acc.monthlyExpense || 0)}
+          <div className="text-sm font-bold" style={{ color: '#fca5a5' }}>
+            −{money(acc.monthlyExpense || 0)}
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+/* ──────────────────────── AccountFormModal ─────────────────────── */
 
 function AccountFormModal({ open, onClose, onSave, initial }: any) {
   const [form, setForm] = useState({
@@ -157,87 +191,121 @@ function AccountFormModal({ open, onClose, onSave, initial }: any) {
   const f = (k: string, v: any) => setForm((p) => ({ ...p, [k]: v }));
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <div className="p-6 max-w-md w-full">
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-lg font-bold">{initial ? 'Edit Account' : 'Add Account'}</h2>
-          <button onClick={onClose} className="btn btn-ghost btn-icon"><X size={18} /></button>
+    <Modal open={open} onClose={onClose} title={initial ? 'Edit Account' : 'Add Account'}>
+      <div className="px-5 pb-6 space-y-4">
+        {/* Account Name */}
+        <div>
+          <label className="label">Account Name *</label>
+          <input
+            className="input"
+            placeholder="e.g. HDFC Salary Account"
+            value={form.accountName}
+            onChange={(e) => f('accountName', e.target.value)}
+          />
         </div>
 
-        <div className="space-y-4">
+        {/* Bank Name */}
+        <div>
+          <label className="label">Bank Name</label>
+          <input
+            className="input"
+            placeholder="e.g. HDFC Bank"
+            value={form.bankName}
+            onChange={(e) => f('bankName', e.target.value)}
+          />
+        </div>
+
+        {/* Account Type */}
+        <div>
+          <label className="label">Account Type</label>
+          <select
+            className="input"
+            value={form.accountType}
+            onChange={(e) => f('accountType', e.target.value)}
+          >
+            {ACCOUNT_TYPES.map((t) => <option key={t}>{t}</option>)}
+          </select>
+        </div>
+
+        {/* Last 4 Digits */}
+        <div>
+          <label className="label">Last 4 Digits (optional)</label>
+          <input
+            className="input"
+            placeholder="4521"
+            maxLength={4}
+            inputMode="numeric"
+            value={form.accountNumberLast4}
+            onChange={(e) => f('accountNumberLast4', e.target.value.replace(/\D/g, '').slice(0, 4))}
+          />
+        </div>
+
+        {/* Opening Balance — only for new accounts */}
+        {!initial && (
           <div>
-            <label className="label">Account Name *</label>
+            <label className="label">Opening Balance (₹)</label>
             <input
               className="input"
-              placeholder="e.g. HDFC Salary Account"
-              value={form.accountName}
-              onChange={(e) => f('accountName', e.target.value)}
+              type="number"
+              inputMode="decimal"
+              placeholder="0"
+              value={form.openingBalance}
+              onChange={(e) => f('openingBalance', e.target.value)}
             />
+            <p className="text-xs muted mt-1">
+              Current money in this account before using the app.
+            </p>
           </div>
+        )}
 
-          <div>
-            <label className="label">Bank Name</label>
-            <input
-              className="input"
-              placeholder="e.g. HDFC Bank"
-              value={form.bankName}
-              onChange={(e) => f('bankName', e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="label">Account Type</label>
-            <select className="input" value={form.accountType} onChange={(e) => f('accountType', e.target.value)}>
-              {ACCOUNT_TYPES.map((t) => <option key={t}>{t}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="label">Last 4 Digits (optional)</label>
-            <input
-              className="input"
-              placeholder="4521"
-              maxLength={4}
-              value={form.accountNumberLast4}
-              onChange={(e) => f('accountNumberLast4', e.target.value.replace(/\D/g, '').slice(0, 4))}
-            />
-          </div>
-
-          {!initial && (
-            <div>
-              <label className="label">Opening Balance (₹)</label>
-              <input
-                className="input"
-                type="number"
-                placeholder="0"
-                value={form.openingBalance}
-                onChange={(e) => f('openingBalance', e.target.value)}
+        {/* Color picker */}
+        <div>
+          <label className="label">Card Color</label>
+          <div className="flex gap-3 flex-wrap mt-2">
+            {ACCOUNT_COLORS.map((c) => (
+              <button
+                key={c}
+                onClick={() => f('color', c)}
+                className="w-9 h-9 rounded-full transition-all active:scale-95"
+                style={{
+                  background: c,
+                  outline: form.color === c ? `3px solid #fff` : '3px solid transparent',
+                  outlineOffset: 2,
+                  transform: form.color === c ? 'scale(1.18)' : 'scale(1)',
+                  boxShadow: form.color === c ? `0 0 0 2px ${c}` : 'none',
+                }}
               />
-              <p className="text-xs muted mt-1">Current money in this account before using the app.</p>
-            </div>
-          )}
-
-          <div>
-            <label className="label">Color</label>
-            <div className="flex gap-2 flex-wrap mt-1">
-              {ACCOUNT_COLORS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => f('color', c)}
-                  className="w-8 h-8 rounded-full border-2 transition-all"
-                  style={{
-                    background: c,
-                    borderColor: form.color === c ? '#fff' : 'transparent',
-                    transform: form.color === c ? 'scale(1.2)' : 'scale(1)',
-                  }}
-                />
-              ))}
-            </div>
+            ))}
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="btn btn-secondary flex-1">Cancel</button>
+        {/* Preview chip */}
+        <div
+          className="rounded-xl px-4 py-3 flex items-center gap-3"
+          style={{ background: `${form.color}22`, border: `1px solid ${form.color}44` }}
+        >
+          <div
+            className="w-8 h-8 rounded-lg grid place-items-center shrink-0"
+            style={{ background: `${form.color}33` }}
+          >
+            {(() => {
+              const Icon = ACCOUNT_TYPE_ICONS[form.accountType] || Building2;
+              return <Icon size={16} style={{ color: form.color }} />;
+            })()}
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold truncate" style={{ color: form.color }}>
+              {form.accountName || 'Account Name'}
+            </div>
+            <div className="text-xs muted truncate">{form.bankName || form.accountType}</div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 pt-1" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <button onClick={onClose} className="btn btn-secondary flex-1">
+            Cancel
+          </button>
           <button onClick={() => onSave(form)} className="btn btn-primary flex-1">
             {initial ? 'Update' : 'Add Account'}
           </button>
@@ -246,6 +314,8 @@ function AccountFormModal({ open, onClose, onSave, initial }: any) {
     </Modal>
   );
 }
+
+/* ─────────────────── AccountTransactionsModal ──────────────────── */
 
 function AccountTransactionsModal({ open, onClose, account }: any) {
   const [txs, setTxs] = useState<any[]>([]);
@@ -265,60 +335,78 @@ function AccountTransactionsModal({ open, onClose, account }: any) {
 
   return (
     <Modal open={open} onClose={onClose}>
-      <div className="p-6 max-w-lg w-full max-h-[85vh] flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h2 className="text-lg font-bold">{account.accountName}</h2>
-            <div className="text-xl font-bold mt-0.5" style={{ color: account.balance >= 0 ? '#22c55e' : '#f43f5e' }}>
-              {money(account.balance)}
-            </div>
+      <div className="flex flex-col" style={{ maxHeight: '72vh' }}>
+        {/* Account summary */}
+        <div className="px-5 pb-3">
+          <div className="text-base font-bold">{account.accountName}</div>
+          <div
+            className="text-2xl font-bold mt-0.5"
+            style={{ color: account.balance >= 0 ? '#22c55e' : '#f43f5e' }}
+          >
+            {money(account.balance)}
           </div>
-          <button onClick={onClose} className="btn btn-ghost btn-icon"><X size={18} /></button>
         </div>
 
-        {/* Filter tabs */}
-        <div className="flex gap-1 tab-list mb-4" style={{ background: '#0d0f16' }}>
-          {FILTER_OPTIONS.map((f) => (
+        {/* Period pill tabs */}
+        <div className="pill-tabs px-4 mb-3 flex-shrink-0">
+          {FILTER_OPTIONS.map((fo) => (
             <button
-              key={f.value}
-              className={`tab ${filter === f.value ? 'active' : ''}`}
-              onClick={() => setFilter(f.value)}
-              style={{ fontSize: 11, padding: '6px 10px' }}
+              key={fo.value}
+              className={`pill-tab ${filter === fo.value ? 'active' : ''}`}
+              onClick={() => setFilter(fo.value)}
             >
-              {f.label}
+              {fo.label}
             </button>
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
+        {/* Transaction list */}
+        <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-1">
           {loading ? (
-            <div className="text-center py-8 muted text-sm">Loading...</div>
+            <div className="space-y-2 pt-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="skeleton h-14 rounded-xl" />
+              ))}
+            </div>
           ) : txs.length === 0 ? (
-            <div className="text-center py-8 muted text-sm">No transactions for this period.</div>
-          ) : txs.map((tx: any) => {
-            const cat = tx.categoryId;
-            const isIncome = tx.type === 'income';
-            return (
-              <div key={tx._id} className="tx-row">
-                <CategoryIcon icon={cat?.icon || 'Circle'} color={cat?.color || '#6b7280'} size={15} bgSize={34} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{tx.description}</div>
-                  <div className="text-xs muted">{cat?.name || 'Uncategorized'} · {formatShortDate(tx.date)}</div>
+            <div className="text-center py-10">
+              <div className="muted text-sm">No transactions for this period.</div>
+            </div>
+          ) : (
+            txs.map((tx: any) => {
+              const cat = tx.categoryId;
+              const isIncome = tx.type === 'income';
+              return (
+                <div key={tx._id} className="tx-row">
+                  <CategoryIcon
+                    icon={cat?.icon || 'Circle'}
+                    color={cat?.color || '#6b7280'}
+                    size={15}
+                    bgSize={34}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{tx.description}</div>
+                    <div className="text-xs muted">
+                      {cat?.name || 'Uncategorized'} · {formatShortDate(tx.date)}
+                    </div>
+                  </div>
+                  <div
+                    className="text-sm font-semibold shrink-0"
+                    style={{ color: isIncome ? '#22c55e' : '#f43f5e' }}
+                  >
+                    {isIncome ? '+' : '−'}{money(tx.amount)}
+                  </div>
                 </div>
-                <div
-                  className="text-sm font-semibold"
-                  style={{ color: isIncome ? '#22c55e' : '#f43f5e' }}
-                >
-                  {isIncome ? '+' : '-'}{money(tx.amount)}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     </Modal>
   );
 }
+
+/* ─────────────────────── Main Accounts Page ────────────────────── */
 
 export default function Accounts() {
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -343,14 +431,20 @@ export default function Accounts() {
   useEffect(() => { load(); }, [load]);
 
   const totalBalance = accounts.reduce((s, a) => s + (a.balance || 0), 0);
-  const totalIncome = accounts.reduce((s, a) => s + (a.monthlyIncome || 0), 0);
+  const totalIncome  = accounts.reduce((s, a) => s + (a.monthlyIncome || 0), 0);
   const totalExpense = accounts.reduce((s, a) => s + (a.monthlyExpense || 0), 0);
 
   const handleSave = async (form: any) => {
     try {
       if (editTarget) {
         const r = await api.put(`/accounts/${editTarget._id}`, form);
-        setAccounts((prev) => prev.map((a) => a._id === editTarget._id ? { ...r.data, monthlyIncome: a.monthlyIncome, monthlyExpense: a.monthlyExpense } : a));
+        setAccounts((prev) =>
+          prev.map((a) =>
+            a._id === editTarget._id
+              ? { ...r.data, monthlyIncome: a.monthlyIncome, monthlyExpense: a.monthlyExpense }
+              : a,
+          ),
+        );
         toast('Account updated', 'success');
       } else {
         await api.post('/accounts', form);
@@ -377,66 +471,100 @@ export default function Accounts() {
     }
   };
 
+  const openAddForm = () => { setEditTarget(null); setFormOpen(true); };
+
   return (
-    <div className="fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-7">
+    <div className="fade-in page-content pb-24">
+
+      {/* ── Page header ── */}
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Accounts</h1>
-          <p className="muted mt-1 text-sm">Your bank accounts and wallet balances.</p>
+          <h1 className="text-2xl font-bold">Accounts</h1>
+          <p className="muted text-sm mt-0.5">Your balances & transaction history</p>
         </div>
+        {/* Desktop-only add button (mobile uses FAB) */}
         <button
-          onClick={() => { setEditTarget(null); setFormOpen(true); }}
-          className="btn btn-primary"
+          onClick={openAddForm}
+          className="hidden sm:flex btn btn-primary gap-2"
         >
           <Plus size={16} /> Add Account
         </button>
       </div>
 
-      {/* Total balance overview */}
+      {/* ── Total Balance Hero Card ── */}
       <div
-        className="card p-6 mb-6"
-        style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(139,92,246,0.05))' }}
+        className="rounded-2xl p-5 mb-5"
+        style={{
+          background: 'linear-gradient(135deg, rgba(139,92,246,0.22), rgba(139,92,246,0.07))',
+          border: '1px solid rgba(139,92,246,0.25)',
+        }}
       >
-        <div className="text-xs muted uppercase tracking-wider mb-2">Total Account Balance</div>
-        <div className="text-4xl font-bold mb-4">{money(totalBalance)}</div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center gap-2">
-            <ArrowUpRight size={16} style={{ color: '#22c55e' }} />
-            <div>
-              <div className="text-xs muted">Income This Month</div>
-              <div className="font-semibold" style={{ color: '#22c55e' }}>{money(totalIncome)}</div>
+        <div className="text-xs muted uppercase tracking-widest mb-1">Total Balance</div>
+        <div className="text-4xl font-bold mb-4" style={{ color: totalBalance >= 0 ? '#fff' : '#f43f5e' }}>
+          {money(totalBalance)}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {/* Income */}
+          <div
+            className="rounded-xl px-4 py-3"
+            style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.2)' }}
+          >
+            <div className="flex items-center gap-1.5 mb-1">
+              <ArrowUpRight size={13} color="#22c55e" />
+              <span className="text-xs muted">Income</span>
             </div>
+            <div className="font-bold text-sm" style={{ color: '#22c55e' }}>{money(totalIncome)}</div>
           </div>
-          <div className="flex items-center gap-2">
-            <ArrowDownRight size={16} style={{ color: '#f43f5e' }} />
-            <div>
-              <div className="text-xs muted">Expenses This Month</div>
-              <div className="font-semibold" style={{ color: '#f43f5e' }}>{money(totalExpense)}</div>
+
+          {/* Expenses */}
+          <div
+            className="rounded-xl px-4 py-3"
+            style={{ background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.2)' }}
+          >
+            <div className="flex items-center gap-1.5 mb-1">
+              <ArrowDownRight size={13} color="#f43f5e" />
+              <span className="text-xs muted">Expenses</span>
             </div>
+            <div className="font-bold text-sm" style={{ color: '#f43f5e' }}>{money(totalExpense)}</div>
           </div>
         </div>
       </div>
 
-      {/* Account cards */}
+      {/* ── Section header ── */}
+      {!loading && accounts.length > 0 && (
+        <div className="section-header mb-3">
+          <span className="section-title">My Accounts</span>
+          <span className="muted text-xs">{accounts.length} account{accounts.length !== 1 ? 's' : ''}</span>
+        </div>
+      )}
+
+      {/* ── Account Cards ── */}
       {loading ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => <div key={i} className="skeleton h-52 rounded-2xl" />)}
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="skeleton h-44 rounded-2xl" />
+          ))}
         </div>
       ) : accounts.length === 0 ? (
-        <div className="card p-12 text-center">
-          <Building2 size={40} className="mx-auto mb-4 muted" />
-          <div className="text-lg font-semibold mb-2">No accounts yet</div>
-          <p className="muted text-sm mb-4">Add your first bank account or wallet to start tracking balances.</p>
-          <button
-            onClick={() => { setEditTarget(null); setFormOpen(true); }}
-            className="btn btn-primary mx-auto"
+        <div className="card p-10 text-center">
+          <div
+            className="w-16 h-16 rounded-2xl grid place-items-center mx-auto mb-4"
+            style={{ background: 'rgba(139,92,246,0.15)' }}
           >
+            <Building2 size={28} style={{ color: '#8b5cf6' }} />
+          </div>
+          <div className="text-base font-semibold mb-1">No accounts yet</div>
+          <p className="muted text-sm mb-5">
+            Add your first bank account or wallet to start tracking balances.
+          </p>
+          <button onClick={openAddForm} className="btn btn-primary mx-auto">
             <Plus size={16} /> Add Account
           </button>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        /* Single-column on mobile, 2-col on sm, 3-col on lg */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0">
           {accounts.map((acc) => (
             <AccountCard
               key={acc._id}
@@ -449,7 +577,16 @@ export default function Accounts() {
         </div>
       )}
 
-      {/* Account form modal */}
+      {/* ── FAB — mobile only ── */}
+      <button
+        onClick={openAddForm}
+        className="fab sm:hidden"
+        aria-label="Add Account"
+      >
+        <Plus size={24} />
+      </button>
+
+      {/* ── Account Form Modal (iOS bottom sheet on mobile) ── */}
       <AccountFormModal
         open={formOpen}
         onClose={() => { setFormOpen(false); setEditTarget(null); }}
@@ -457,23 +594,34 @@ export default function Accounts() {
         initial={editTarget}
       />
 
-      {/* Transaction history modal */}
+      {/* ── Transaction History Modal ── */}
       <AccountTransactionsModal
         open={!!viewTarget}
         onClose={() => setViewTarget(null)}
         account={viewTarget}
       />
 
-      {/* Delete confirmation */}
-      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
-        <div className="p-6 max-w-sm w-full">
-          <h2 className="text-lg font-bold mb-2">Remove Account?</h2>
-          <p className="muted text-sm mb-5">
-            This will hide <strong>{deleteTarget?.accountName}</strong>. Existing transactions will not be deleted.
+      {/* ── Delete Confirmation Modal ── */}
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Remove Account?">
+        <div className="px-5 pb-6">
+          <p className="muted text-sm mb-6">
+            This will hide{' '}
+            <strong className="text-white">{deleteTarget?.accountName}</strong>.
+            Existing transactions will not be deleted.
           </p>
-          <div className="flex gap-3">
-            <button onClick={() => setDeleteTarget(null)} className="btn btn-secondary flex-1">Cancel</button>
-            <button onClick={handleDelete} className="btn flex-1" style={{ background: '#ef4444', color: '#fff' }}>Remove</button>
+          <div className="flex gap-3" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+            <button
+              onClick={() => setDeleteTarget(null)}
+              className="btn btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              className="btn btn-danger flex-1"
+            >
+              Remove
+            </button>
           </div>
         </div>
       </Modal>

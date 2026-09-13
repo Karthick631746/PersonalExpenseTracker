@@ -7,7 +7,10 @@ import {
 import CategoryIcon from '../components/CategoryIcon';
 import Modal from '../components/Modal';
 import { toast } from '../components/Toast';
-import { Plus, Pencil, Trash2, Calendar, TrendingUp } from 'lucide-react';
+import {
+  Plus, Pencil, Trash2, Calendar, TrendingUp,
+  Wallet, AlertTriangle, CheckCircle2, Target,
+} from 'lucide-react';
 
 const defaultForm = {
   name: '',
@@ -15,6 +18,14 @@ const defaultForm = {
   amount: '',
   startDate: new Date().toISOString().slice(0, 10),
   endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().slice(0, 10),
+};
+
+/** Map status → Lucide icon component */
+const statusIcons = {
+  healthy: CheckCircle2,
+  watch: TrendingUp,
+  critical: AlertTriangle,
+  exceeded: AlertTriangle,
 };
 
 export default function Budgets() {
@@ -106,50 +117,110 @@ export default function Budgets() {
   const totalBudget = budgets.reduce((s, b) => s + b.amount, 0);
   const totalSpent = budgets.reduce((s, b) => s + (b.spentAmount || 0), 0);
   const totalRemaining = Math.max(0, totalBudget - totalSpent);
+  const overallPct = pct(totalSpent, totalBudget);
 
   return (
-    <div className="fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div className="fade-in page-content pb-28">
+
+      {/* ── Page header ── */}
+      <div className="flex items-center justify-between mb-5 pt-1">
         <div>
-          <h1 className="text-2xl font-bold">Budgets</h1>
-          <p className="muted text-sm mt-1">{budgets.length} budget{budgets.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold tracking-tight">Budgets</h1>
+          <p className="muted text-sm mt-0.5">
+            {budgets.length} budget{budgets.length !== 1 ? 's' : ''} active
+          </p>
         </div>
-        <button className="btn btn-primary" onClick={openNew}>
+        {/* Desktop-only add button — on mobile we use FAB */}
+        <button
+          className="btn btn-primary hidden sm:flex"
+          onClick={openNew}
+        >
           <Plus size={16} /> Add Budget
         </button>
       </div>
 
-      {/* Summary row */}
-      {budgets.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          {[
-            { label: 'Total Budgeted', value: totalBudget, color: '#8b5cf6' },
-            { label: 'Total Spent', value: totalSpent, color: '#f43f5e' },
-            { label: 'Total Remaining', value: totalRemaining, color: '#22c55e' },
-          ].map(({ label, value, color }) => (
-            <div className="stat-card text-center" key={label}>
-              <div className="text-xs muted uppercase tracking-wide mb-2">{label}</div>
-              <div className="text-xl font-bold" style={{ color }}>{money(value)}</div>
+      {/* ── Summary hero strip ── */}
+      {budgets.length > 0 && !loading && (
+        <div
+          className="rounded-2xl p-4 mb-5"
+          style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.18) 0%, rgba(14,165,233,0.10) 100%)', border: '1px solid rgba(139,92,246,0.25)' }}
+        >
+          {/* Top row: total budgeted & spent */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {[
+              { label: 'Budgeted', value: totalBudget, color: '#8b5cf6', icon: Target },
+              { label: 'Spent', value: totalSpent, color: '#f43f5e', icon: Wallet },
+              { label: 'Remaining', value: totalRemaining, color: '#22c55e', icon: CheckCircle2 },
+            ].map(({ label, value, color, icon: Icon }) => (
+              <div key={label} className="flex flex-col items-center text-center">
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center mb-1.5"
+                  style={{ background: `${color}22` }}
+                >
+                  <Icon size={14} style={{ color }} />
+                </div>
+                <div className="text-[11px] muted uppercase tracking-wider mb-0.5">{label}</div>
+                <div className="text-base font-bold leading-tight" style={{ color }}>
+                  {money(value)}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Overall progress bar */}
+          <div>
+            <div className="flex justify-between text-xs mb-1.5">
+              <span className="muted">Overall usage</span>
+              <span className="font-semibold" style={{ color: overallPct >= 100 ? '#f43f5e' : overallPct >= 75 ? '#f59e0b' : '#22c55e' }}>
+                {overallPct}%
+              </span>
             </div>
-          ))}
+            <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${Math.min(overallPct, 100)}%`,
+                  background: overallPct >= 100
+                    ? '#f43f5e'
+                    : overallPct >= 75
+                    ? 'linear-gradient(90deg,#f59e0b,#ef4444)'
+                    : 'linear-gradient(90deg,#8b5cf6,#22c55e)',
+                }}
+              />
+            </div>
+          </div>
         </div>
       )}
 
+      {/* ── Loading skeletons ── */}
       {loading ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array(3).fill(0).map((_, i) => <div key={i} className="skeleton h-56 rounded-2xl" />)}
+        <div className="space-y-3">
+          {Array(3).fill(0).map((_, i) => (
+            <div key={i} className="skeleton rounded-2xl" style={{ height: 180 }} />
+          ))}
         </div>
+
       ) : budgets.length === 0 ? (
-        <div className="card p-12 text-center">
-          <div className="text-5xl mb-4">📋</div>
-          <div className="font-semibold mb-1">No budgets yet</div>
-          <div className="muted text-sm mb-5">Create budgets to control your spending.</div>
+        /* ── Empty state ── */
+        <div className="card flex flex-col items-center text-center p-10 mt-4">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+            style={{ background: 'rgba(139,92,246,0.15)' }}
+          >
+            <Target size={32} style={{ color: '#8b5cf6' }} />
+          </div>
+          <div className="font-semibold text-lg mb-1">No budgets yet</div>
+          <div className="muted text-sm mb-6 max-w-xs">
+            Create budgets to track and control your spending by category.
+          </div>
           <button className="btn btn-primary" onClick={openNew}>
-            <Plus size={14} /> Create first budget
+            <Plus size={16} /> Create first budget
           </button>
         </div>
+
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        /* ── Budget cards list ── */
+        <div className="space-y-3">
           {budgets.map((b) => {
             const cat = b.categoryId;
             const spent = b.spentAmount || 0;
@@ -163,99 +234,150 @@ export default function Budgets() {
             const elapsed = daysElapsed(b.startDate);
             const dailyAvailable = daysLeft > 0 ? remaining / daysLeft : 0;
             const overBudget = spent > b.amount;
+            const StatusIcon = statusIcons[status];
+
+            // Days-left urgency color
+            const daysLeftColor = daysLeft <= 3 ? '#f43f5e' : daysLeft <= 7 ? '#f59e0b' : '#a0a3b1';
 
             return (
-              <div key={b._id} className="card card-hover p-5">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
+              <div
+                key={b._id}
+                className="card slide-up"
+                style={{ padding: 0, overflow: 'hidden' }}
+              >
+                {/* Colored top accent strip */}
+                <div
+                  className="h-1 w-full"
+                  style={{ background: statusColor }}
+                />
+
+                <div className="p-4">
+                  {/* ── Row 1: icon + name + badge + actions ── */}
+                  <div className="flex items-start gap-3 mb-4">
                     <CategoryIcon
                       icon={cat?.icon || 'Circle'}
                       color={cat?.color || '#6b7280'}
-                      size={18}
-                      bgSize={40}
+                      size={20}
+                      bgSize={44}
                     />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-base leading-tight truncate">{b.name}</div>
+                      <div className="text-xs muted mt-0.5">{cat?.name || 'Uncategorized'}</div>
+                    </div>
+
+                    {/* Status badge */}
+                    <span
+                      className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full shrink-0"
+                      style={{ background: statusBg, color: statusColor }}
+                    >
+                      <StatusIcon size={11} />
+                      {budgetStatusLabel[status]}
+                    </span>
+                  </div>
+
+                  {/* ── Row 2: Spent / Total amounts ── */}
+                  <div className="flex items-baseline justify-between mb-3">
                     <div>
-                      <div className="font-semibold text-sm">{b.name}</div>
-                      <div className="text-xs muted">{cat?.name || 'Category'}</div>
+                      <span className="text-2xl font-bold">{money(spent)}</span>
+                      <span className="text-sm muted ml-1.5">of {money(b.amount)}</span>
+                    </div>
+                    <div className="text-right">
+                      <div
+                        className="text-sm font-semibold"
+                        style={{ color: overBudget ? '#f43f5e' : '#22c55e' }}
+                      >
+                        {overBudget
+                          ? `+${money(spent - b.amount)} over`
+                          : `${money(remaining)} left`}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-1">
-                    <button className="btn btn-ghost btn-icon" onClick={() => openEdit(b)}>
-                      <Pencil size={13} />
-                    </button>
-                    <button className="btn btn-danger btn-icon" onClick={() => setDeleteId(b._id)}>
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </div>
 
-                {/* Amounts */}
-                <div className="flex justify-between items-baseline mb-3">
-                  <div>
-                    <div className="text-2xl font-bold">{money(spent)}</div>
-                    <div className="text-xs muted mt-0.5">spent of {money(b.amount)}</div>
-                  </div>
-                  <span
-                    className="badge"
-                    style={{ background: statusBg, color: statusColor }}
-                  >
-                    {budgetStatusLabel[status]}
-                  </span>
-                </div>
-
-                {/* Progress bar */}
-                <div className="progress-track mb-2">
-                  <div
-                    className="progress-fill"
-                    style={{
-                      width: `${Math.min(progress, 100)}%`,
-                      background: statusColor,
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs muted mb-4">
-                  <span>{progress}% used</span>
-                  <span>{overBudget ? `${money(spent - b.amount)} over` : `${money(remaining)} left`}</span>
-                </div>
-
-                {/* Dates & days */}
-                <div
-                  className="rounded-xl p-3 space-y-2"
-                  style={{ background: '#0d0f16' }}
-                >
-                  <div className="flex items-center gap-2 text-xs muted">
-                    <Calendar size={12} />
-                    <span>
-                      {formatDate(b.startDate)} → {formatDate(b.endDate)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="muted">Days elapsed / Total</span>
-                    <span className="font-medium">{elapsed} / {totalDays}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="muted">Days remaining</span>
-                    <span
-                      className="font-semibold"
-                      style={{ color: daysLeft <= 3 ? '#f43f5e' : daysLeft <= 7 ? '#f59e0b' : '#eef0f6' }}
+                  {/* ── Row 3: Bold progress bar ── */}
+                  <div className="mb-1">
+                    <div
+                      className="w-full rounded-full overflow-hidden"
+                      style={{ height: 10, background: 'rgba(255,255,255,0.07)' }}
                     >
-                      {daysLeft} day{daysLeft !== 1 ? 's' : ''}
-                    </span>
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${Math.min(progress, 100)}%`,
+                          background: overBudget
+                            ? '#f43f5e'
+                            : status === 'critical'
+                            ? 'linear-gradient(90deg,#f59e0b,#ef4444)'
+                            : status === 'watch'
+                            ? '#f59e0b'
+                            : `linear-gradient(90deg,${cat?.color || '#8b5cf6'},${statusColor})`,
+                          boxShadow: `0 0 8px ${statusColor}55`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs muted mt-1.5">
+                      <span>{progress}% used</span>
+                      <span>{elapsed}/{totalDays} days</span>
+                    </div>
                   </div>
-                  {!overBudget && daysLeft > 0 && (
-                    <div className="flex justify-between text-xs pt-2 border-t border-[#1e2130]">
-                      <span className="muted flex items-center gap-1"><TrendingUp size={11} /> Daily budget</span>
-                      <span className="font-semibold" style={{ color: '#22c55e' }}>
-                        {money(dailyAvailable)}/day
+
+                  {/* ── Row 4: Date range + days left info strip ── */}
+                  <div
+                    className="rounded-xl px-3 py-2.5 mt-3 space-y-2"
+                    style={{ background: 'rgba(255,255,255,0.04)' }}
+                  >
+                    {/* Date range */}
+                    <div className="flex items-center gap-2 text-xs muted">
+                      <Calendar size={12} />
+                      <span>{formatDate(b.startDate)} → {formatDate(b.endDate)}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="muted">Days remaining</span>
+                      <span className="font-semibold" style={{ color: daysLeftColor }}>
+                        {daysLeft} day{daysLeft !== 1 ? 's' : ''}
                       </span>
                     </div>
-                  )}
-                  {overBudget && (
-                    <div className="text-xs text-center pt-2 border-t border-[#1e2130]" style={{ color: '#f43f5e' }}>
-                      ⚠ Budget exceeded by {money(spent - b.amount)}
-                    </div>
-                  )}
+
+                    {!overBudget && daysLeft > 0 && (
+                      <div className="flex items-center justify-between text-xs pt-2 border-t border-[#1e2130]">
+                        <span className="muted flex items-center gap-1">
+                          <TrendingUp size={11} /> Daily allowance
+                        </span>
+                        <span className="font-semibold" style={{ color: '#22c55e' }}>
+                          {money(dailyAvailable)}/day
+                        </span>
+                      </div>
+                    )}
+
+                    {overBudget && (
+                      <div
+                        className="flex items-center justify-center gap-1.5 text-xs pt-2 border-t border-[#1e2130] font-semibold"
+                        style={{ color: '#f43f5e' }}
+                      >
+                        <AlertTriangle size={12} />
+                        Exceeded by {money(spent - b.amount)}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Row 5: Edit / Delete action buttons ── */}
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-[#1e2130]">
+                    <button
+                      className="btn btn-secondary flex-1 gap-2 text-sm"
+                      style={{ minHeight: 44 }}
+                      onClick={() => openEdit(b)}
+                    >
+                      <Pencil size={14} /> Edit
+                    </button>
+                    <button
+                      className="btn btn-danger flex-1 gap-2 text-sm"
+                      style={{ minHeight: 44 }}
+                      onClick={() => setDeleteId(b._id)}
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -263,7 +385,17 @@ export default function Budgets() {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
+      {/* ── FAB – mobile add button ── */}
+      <button
+        className="fab sm:hidden"
+        onClick={openNew}
+        aria-label="Add budget"
+        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)' }}
+      >
+        <Plus size={24} />
+      </button>
+
+      {/* ── Add / Edit Modal ── */}
       <Modal
         open={open}
         title={editing ? 'Edit Budget' : 'Add Budget'}
@@ -336,28 +468,61 @@ export default function Budgets() {
 
           {form.startDate && form.endDate && new Date(form.endDate) >= new Date(form.startDate) && (
             <div
-              className="text-xs rounded-lg px-3 py-2"
-              style={{ background: 'rgba(139,92,246,0.1)', color: '#a78bfa' }}
+              className="flex items-center gap-2 text-xs rounded-xl px-3 py-2.5"
+              style={{ background: 'rgba(139,92,246,0.12)', color: '#a78bfa' }}
             >
-              📅 {daysBetween(form.startDate, form.endDate)} day budget period
+              <Calendar size={13} />
+              {daysBetween(form.startDate, form.endDate)} day budget period
             </div>
           )}
 
           <div className="flex gap-3 pt-2">
-            <button type="button" className="btn btn-secondary flex-1" onClick={() => setOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary flex-1" disabled={saving}>
+            <button
+              type="button"
+              className="btn btn-secondary flex-1"
+              style={{ minHeight: 48 }}
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary flex-1"
+              style={{ minHeight: 48 }}
+              disabled={saving}
+            >
               {saving ? 'Saving…' : editing ? 'Update Budget' : 'Create Budget'}
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* Delete Confirm */}
+      {/* ── Delete Confirm Modal ── */}
       <Modal open={!!deleteId} title="Delete Budget" onClose={() => setDeleteId(null)} size="sm">
-        <p className="muted text-sm mb-6">Delete this budget? This cannot be undone.</p>
+        <div
+          className="flex items-center justify-center w-14 h-14 rounded-2xl mx-auto mb-4"
+          style={{ background: 'rgba(244,63,94,0.15)' }}
+        >
+          <Trash2 size={24} style={{ color: '#f43f5e' }} />
+        </div>
+        <p className="muted text-sm text-center mb-6">
+          Delete this budget? All tracking data will be lost and this cannot be undone.
+        </p>
         <div className="flex gap-3">
-          <button className="btn btn-secondary flex-1" onClick={() => setDeleteId(null)}>Cancel</button>
-          <button className="btn btn-danger flex-1" onClick={doDelete}>Delete</button>
+          <button
+            className="btn btn-secondary flex-1"
+            style={{ minHeight: 48 }}
+            onClick={() => setDeleteId(null)}
+          >
+            Cancel
+          </button>
+          <button
+            className="btn btn-danger flex-1"
+            style={{ minHeight: 48 }}
+            onClick={doDelete}
+          >
+            Delete
+          </button>
         </div>
       </Modal>
     </div>
