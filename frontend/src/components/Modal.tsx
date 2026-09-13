@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 
 interface Props {
   open: boolean;
-  title: string;
+  title?: string;
   onClose: () => void;
   children: ReactNode;
   size?: 'sm' | 'md' | 'lg';
@@ -24,7 +24,7 @@ export default function Modal({ open, title, onClose, children, size = 'md' }: P
         style={{ padding: '24px' }}
       >
         <div className="flex justify-between items-center mb-6">
-          <h2 className="font-bold text-lg">{title}</h2>
+          {title && <h2 className="font-bold text-lg">{title}</h2>}
           <button
             onClick={onClose}
             className="btn btn-ghost btn-icon"

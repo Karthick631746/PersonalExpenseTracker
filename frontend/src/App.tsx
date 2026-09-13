@@ -9,6 +9,9 @@ import Budgets from './pages/Budgets';
 import CreditCards from './pages/CreditCards';
 import Milestones from './pages/Milestones';
 import Gold from './pages/Gold';
+import Accounts from './pages/Accounts';
+import DebitCards from './pages/DebitCards';
+import MonthlyTodo from './pages/MonthlyTodo';
 import { Analytics, Upcoming, Settings } from './pages/Extra';
 import { ToastProvider } from './components/Toast';
 import './index.css';
@@ -45,11 +48,14 @@ export default function App() {
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/transactions" element={<Transactions />} />
+                  <Route path="/accounts" element={<Accounts />} />
+                  <Route path="/debit-cards" element={<DebitCards />} />
                   <Route path="/budgets" element={<Budgets />} />
                   <Route path="/milestones" element={<Milestones />} />
                   <Route path="/gold" element={<Gold />} />
                   <Route path="/credit-cards" element={<CreditCards />} />
                   <Route path="/categories" element={<Categories />} />
+                  <Route path="/monthly-todo" element={<MonthlyTodo />} />
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/upcoming" element={<Upcoming />} />
                   <Route path="/settings" element={<Settings />} />

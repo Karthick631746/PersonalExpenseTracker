@@ -2,9 +2,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { api } from '../lib/api';
 import { money, formatShortDate, pct } from '../lib/utils';
 import CategoryIcon from '../components/CategoryIcon';
+import QuickAdd from '../components/QuickAdd';
+import TransferModal from '../components/TransferModal';
 import {
   TrendingUp, TrendingDown, Wallet, CreditCard, Target,
-  ArrowUpRight, ArrowDownRight, Minus, ChevronRight, Plus
+  ArrowUpRight, ArrowDownRight, ChevronRight, Plus,
+  Building2, ArrowLeftRight, Zap,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -42,19 +45,25 @@ export default function Dashboard() {
   const [summary, setSummary] = useState<any>(null);
   const [trend, setTrend] = useState<any[]>([]);
   const [catSpending, setCatSpending] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [quickAddType, setQuickAddType] = useState<'income' | 'expense' | 'credit_card_payment' | undefined>(undefined);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [s, t, c] = await Promise.all([
+      const [s, t, c, a] = await Promise.all([
         api.get(`/analytics/summary?period=${period}`),
         api.get('/analytics/monthly-trend?months=6'),
         api.get(`/analytics/categories?period=${period}`),
+        api.get('/accounts'),
       ]);
       setSummary(s.data);
       setTrend(t.data);
       setCatSpending(c.data.slice(0, 8));
+      setAccounts(a.data || []);
     } catch {
       /* silent */
     } finally {
@@ -71,12 +80,13 @@ export default function Dashboard() {
 
   const statCards = [
     {
-      label: 'Balance',
-      value: savings,
-      icon: Wallet,
-      color: savings >= 0 ? '#22c55e' : '#f43f5e',
+      label: 'Total Balance',
+      value: summary?.totalAccountBalance ?? (savings >= 0 ? savings : 0),
+      icon: Building2,
+      color: '#8b5cf6',
       trend: null as null | number,
-      prefix: savings < 0 ? '-' : '',
+      prefix: '',
+      isAccountBalance: true,
     },
     {
       label: 'Income',
@@ -106,7 +116,7 @@ export default function Dashboard() {
       label: 'Goals Saved',
       value: summary?.milestones?.saved || 0,
       icon: Target,
-      color: '#8b5cf6',
+      color: '#22c55e',
       trend: null,
       prefix: '',
     },
@@ -152,7 +162,7 @@ export default function Dashboard() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
-        {statCards.map(({ label, value, icon: Icon, color, trend: t, prefix }) => (
+        {statCards.map(({ label, value, icon: Icon, color, trend: t, prefix }: any) => (
           <div className="stat-card" key={label}>
             <div className="flex items-center justify-between mb-3">
               <span className="muted text-xs font-medium uppercase tracking-wide">{label}</span>
@@ -163,16 +173,45 @@ export default function Dashboard() {
                 <Icon size={15} style={{ color }} />
               </div>
             </div>
-            <div
-              className="text-xl font-bold mb-1"
-              style={{ color: label === 'Balance' && savings < 0 ? '#f43f5e' : undefined }}
-            >
+            <div className="text-xl font-bold mb-1">
               {prefix}{money(Math.abs(value))}
             </div>
             <TrendBadge pct={t} />
           </div>
         ))}
       </div>
+
+      {/* Accounts mini-strip */}
+      {accounts.length > 0 && (
+        <div className="card p-4 mb-5">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="font-semibold text-sm">Your Accounts</h2>
+            <Link to="/accounts" className="text-xs flex items-center gap-1" style={{ color: '#8b5cf6' }}>
+              Manage <ChevronRight size={12} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {accounts.slice(0, 4).map((acc: any) => (
+              <div
+                key={acc._id}
+                className="flex items-center gap-2 p-2 rounded-xl"
+                style={{ background: `${acc.color}12`, border: `1px solid ${acc.color}25` }}
+              >
+                <div className="w-7 h-7 rounded-lg grid place-items-center flex-shrink-0"
+                  style={{ background: `${acc.color}25` }}>
+                  <Building2 size={13} style={{ color: acc.color }} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-medium truncate">{acc.accountName}</div>
+                  <div className="text-xs font-bold" style={{ color: acc.balance >= 0 ? '#22c55e' : '#f43f5e' }}>
+                    {money(acc.balance)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Charts row */}
       <div className="grid lg:grid-cols-3 gap-5 mb-5">
@@ -430,6 +469,62 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Floating Action Button */}
+      <div
+        className="fixed bottom-24 md:bottom-8 right-6 md:right-8 flex flex-col gap-2 z-50"
+        style={{ alignItems: 'flex-end' }}
+      >
+        <div className="flex gap-2 flex-wrap justify-end">
+          <button
+            onClick={() => { setTransferOpen(true); }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold shadow-lg transition-all hover:scale-105"
+            style={{ background: 'rgba(59,130,246,0.9)', color: '#fff', backdropFilter: 'blur(8px)' }}
+            title="Transfer"
+          >
+            <ArrowLeftRight size={15} /> Transfer
+          </button>
+          <button
+            onClick={() => { setQuickAddType('credit_card_payment'); setQuickAddOpen(true); }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold shadow-lg transition-all hover:scale-105"
+            style={{ background: 'rgba(245,158,11,0.9)', color: '#fff', backdropFilter: 'blur(8px)' }}
+          >
+            <CreditCard size={15} /> CC Pay
+          </button>
+          <button
+            onClick={() => { setQuickAddType('expense'); setQuickAddOpen(true); }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold shadow-lg transition-all hover:scale-105"
+            style={{ background: 'rgba(244,63,94,0.9)', color: '#fff', backdropFilter: 'blur(8px)' }}
+          >
+            <TrendingDown size={15} /> Expense
+          </button>
+          <button
+            onClick={() => { setQuickAddType('income'); setQuickAddOpen(true); }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold shadow-lg transition-all hover:scale-105"
+            style={{ background: 'rgba(34,197,94,0.9)', color: '#fff', backdropFilter: 'blur(8px)' }}
+          >
+            <TrendingUp size={15} /> Income
+          </button>
+        </div>
+        <div className="flex items-center gap-1 text-xs muted justify-end">
+          <Zap size={10} /> Quick Add
+        </div>
+      </div>
+
+      {/* Quick Add Modal */}
+      <QuickAdd
+        open={quickAddOpen}
+        onClose={() => setQuickAddOpen(false)}
+        onDone={load}
+        defaultType={quickAddType}
+      />
+
+      {/* Transfer Modal */}
+      <TransferModal
+        open={transferOpen}
+        onClose={() => setTransferOpen(false)}
+        onDone={load}
+      />
     </div>
   );
 }

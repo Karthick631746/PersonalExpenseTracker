@@ -20,6 +20,85 @@ const UserSchema = new Schema<IUser>(
   base
 );
 
+// ─── Account ─────────────────────────────────────────────
+const AccountSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    bankName: { type: String, trim: true },
+    accountName: { type: String, required: true, trim: true },
+    accountType: {
+      type: String,
+      enum: ['Savings Account', 'Salary Account', 'Current Account', 'Digital Wallet', 'Cash', 'Other'],
+      default: 'Savings Account',
+    },
+    accountNumberLast4: { type: String, maxlength: 4 },
+    balance: { type: Number, default: 0 },
+    currency: { type: String, default: 'INR' },
+    icon: { type: String, default: 'Building2' },
+    color: { type: String, default: '#8b5cf6' },
+    isActive: { type: Boolean, default: true },
+  },
+  base
+);
+AccountSchema.index({ userId: 1, isActive: 1 });
+
+// ─── Debit Card ───────────────────────────────────────────
+const DebitCardSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    accountId: { type: Schema.Types.ObjectId, ref: 'Account', required: true },
+    bank: { type: String, trim: true },
+    cardName: { type: String, required: true, trim: true },
+    last4: { type: String, maxlength: 4 },
+    expiryMonth: { type: Number, min: 1, max: 12 },
+    expiryYear: { type: Number },
+    color: { type: String, default: '#1a1f35' },
+    isActive: { type: Boolean, default: true },
+  },
+  base
+);
+DebitCardSchema.index({ userId: 1 });
+DebitCardSchema.index({ userId: 1, accountId: 1 });
+
+// ─── Monthly Todo ─────────────────────────────────────────
+const MonthlyTodoSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    title: { type: String, required: true, trim: true },
+    description: { type: String, trim: true },
+    category: {
+      type: String,
+      enum: ['Credit Card', 'Electricity', 'Recharge', 'Internet', 'Rent', 'Insurance', 'Loan', 'Subscription', 'Investment', 'Bills', 'Other'],
+      default: 'Other',
+    },
+    amount: { type: Number, min: 0 },
+    dueDate: { type: Number, min: 1, max: 31 }, // day of month
+    frequency: { type: String, enum: ['monthly', 'yearly', 'custom'], default: 'monthly' },
+    linkedAccountId: { type: Schema.Types.ObjectId, ref: 'Account' },
+    linkedCreditCardId: { type: Schema.Types.ObjectId, ref: 'CreditCard' },
+    isCompleted: { type: Boolean, default: false },
+    completedAt: { type: Date },
+    month: { type: Number, min: 1, max: 12, required: true },
+    year: { type: Number, required: true },
+  },
+  base
+);
+MonthlyTodoSchema.index({ userId: 1, month: 1, year: 1 });
+
+// ─── Transfer ─────────────────────────────────────────────
+const TransferSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    fromAccountId: { type: Schema.Types.ObjectId, ref: 'Account', required: true },
+    toAccountId: { type: Schema.Types.ObjectId, ref: 'Account', required: true },
+    amount: { type: Number, required: true, min: 0.01 },
+    date: { type: Date, required: true },
+    description: { type: String, trim: true, default: 'Account Transfer' },
+  },
+  base
+);
+TransferSchema.index({ userId: 1, date: -1 });
+
 // ─── Category ────────────────────────────────────────────
 const CategorySchema = new Schema(
   {
@@ -45,6 +124,7 @@ const TransactionSchema = new Schema(
     categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
     date: { type: Date, required: true },
     paymentMethod: { type: String, default: 'Cash', enum: ['Cash', 'UPI', 'Debit Card', 'Credit Card', 'Bank Transfer', 'Net Banking', 'Other'] },
+    accountId: { type: Schema.Types.ObjectId, ref: 'Account' }, // optional for legacy transactions
     creditCardId: { type: Schema.Types.ObjectId, ref: 'CreditCard' },
     description: { type: String, required: true, trim: true },
     notes: { type: String, trim: true },
@@ -55,6 +135,7 @@ const TransactionSchema = new Schema(
 TransactionSchema.index({ userId: 1, date: -1 });
 TransactionSchema.index({ userId: 1, categoryId: 1 });
 TransactionSchema.index({ userId: 1, creditCardId: 1 });
+TransactionSchema.index({ userId: 1, accountId: 1 });
 TransactionSchema.index({ userId: 1, type: 1, date: -1 });
 
 // ─── Budget ──────────────────────────────────────────────
@@ -141,16 +222,6 @@ const ContributionSchema = new Schema(
 );
 ContributionSchema.index({ userId: 1, milestoneId: 1, date: -1 });
 
-// ─── Exports ─────────────────────────────────────────────
-export const User = mongoose.model<IUser>('User', UserSchema);
-export const Transaction = mongoose.model('Transaction', TransactionSchema);
-export const Category = mongoose.model('Category', CategorySchema);
-export const Budget = mongoose.model('Budget', BudgetSchema);
-export const CreditCard = mongoose.model('CreditCard', CardSchema);
-export const RecurringTransaction = mongoose.model('RecurringTransaction', RecurringSchema);
-export const Milestone = mongoose.model('Milestone', MilestoneSchema);
-export const MilestoneContribution = mongoose.model('MilestoneContribution', ContributionSchema);
-
 // ─── Gold ──────────────────────────────────────────────────
 const GoldTargetSchema = new Schema(
   {
@@ -174,5 +245,18 @@ const GoldTransactionSchema = new Schema(
 );
 GoldTransactionSchema.index({ userId: 1, date: -1 });
 
+// ─── Exports ─────────────────────────────────────────────
+export const User = mongoose.model<IUser>('User', UserSchema);
+export const Account = mongoose.model('Account', AccountSchema);
+export const DebitCard = mongoose.model('DebitCard', DebitCardSchema);
+export const MonthlyTodo = mongoose.model('MonthlyTodo', MonthlyTodoSchema);
+export const Transfer = mongoose.model('Transfer', TransferSchema);
+export const Transaction = mongoose.model('Transaction', TransactionSchema);
+export const Category = mongoose.model('Category', CategorySchema);
+export const Budget = mongoose.model('Budget', BudgetSchema);
+export const CreditCard = mongoose.model('CreditCard', CardSchema);
+export const RecurringTransaction = mongoose.model('RecurringTransaction', RecurringSchema);
+export const Milestone = mongoose.model('Milestone', MilestoneSchema);
+export const MilestoneContribution = mongoose.model('MilestoneContribution', ContributionSchema);
 export const GoldTarget = mongoose.model('GoldTarget', GoldTargetSchema);
 export const GoldTransaction = mongoose.model('GoldTransaction', GoldTransactionSchema);

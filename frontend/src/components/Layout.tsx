@@ -14,23 +14,35 @@ import {
   Menu,
   X,
   Coins,
+  Building2,
+  Landmark,
+  ListChecks,
 } from 'lucide-react';
 import { useAuth } from '../context/Auth';
 
 const nav = [
   ['/dashboard', 'Dashboard', LayoutDashboard],
   ['/transactions', 'Transactions', Receipt],
+  ['/accounts', 'Accounts', Building2],
+  ['/debit-cards', 'Debit Cards', Landmark],
   ['/budgets', 'Budgets', WalletCards],
   ['/milestones', 'Milestones', Target],
   ['/gold', 'Gold', Coins],
   ['/credit-cards', 'Credit Cards', CreditCard],
-  ['/analytics', 'Analytics', PieChart],
   ['/categories', 'Categories', Tags],
+  ['/monthly-todo', 'Monthly To-Do', ListChecks],
+  ['/analytics', 'Analytics', PieChart],
   ['/upcoming', 'Upcoming', CalendarClock],
   ['/settings', 'Settings', Settings],
 ] as const;
 
-const mobileNav = nav.slice(0, 5);
+const mobileNav = [
+  ['/dashboard', 'Home', LayoutDashboard],
+  ['/transactions', 'Transactions', Receipt],
+  ['/accounts', 'Accounts', Building2],
+  ['/monthly-todo', 'To-Do', ListChecks],
+  ['/analytics', 'More', PieChart],
+] as const;
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();

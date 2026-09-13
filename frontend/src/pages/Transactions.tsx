@@ -4,10 +4,11 @@ import { money, formatDate } from '../lib/utils';
 import CategoryIcon from '../components/CategoryIcon';
 import Modal from '../components/Modal';
 import { toast } from '../components/Toast';
+import QuickAdd from '../components/QuickAdd';
 import {
   Plus, Pencil, Trash2, Search, SlidersHorizontal,
   ArrowUpRight, ArrowDownRight, CreditCard, Calendar,
-  Download,
+  Download, Zap, Building2,
 } from 'lucide-react';
 
 const PAYMENT_METHODS = ['Cash', 'UPI', 'Debit Card', 'Credit Card', 'Bank Transfer', 'Net Banking', 'Other'];
@@ -21,6 +22,7 @@ const defaultForm = {
   paymentMethod: 'UPI',
   categoryId: '',
   creditCardId: '',
+  accountId: '',
 };
 
 export default function Transactions() {
@@ -28,9 +30,11 @@ export default function Transactions() {
   const [total, setTotal] = useState(0);
   const [categories, setCategories] = useState<any[]>([]);
   const [cards, setCards] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [open, setOpen] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState<any>(defaultForm);
   const [saving, setSaving] = useState(false);
@@ -59,10 +63,11 @@ export default function Transactions() {
       if (period) params.set('period', period);
       params.set('page', String(page));
 
-      const [txRes, catRes, cardRes] = await Promise.all([
+      const [txRes, catRes, cardRes, accRes] = await Promise.all([
         api.get(`/transactions?${params}`),
         api.get('/categories'),
         api.get('/credit-cards'),
+        api.get('/accounts'),
       ]);
 
       setItems(txRes.data.data || []);
@@ -70,6 +75,7 @@ export default function Transactions() {
       setPages(txRes.data.pages || 1);
       setCategories(catRes.data);
       setCards(cardRes.data);
+      setAccounts(accRes.data);
     } catch {
       toast('Failed to load transactions', 'error');
     } finally {
@@ -96,6 +102,7 @@ export default function Transactions() {
       paymentMethod: t.paymentMethod,
       categoryId: t.categoryId?._id || t.categoryId || '',
       creditCardId: t.creditCardId?._id || t.creditCardId || '',
+      accountId: t.accountId?._id || t.accountId || '',
     });
     setOpen(true);
   };
@@ -105,15 +112,43 @@ export default function Transactions() {
     if (!form.description.trim()) return toast('Description is required', 'error');
     if (!form.amount || Number(form.amount) <= 0) return toast('Amount must be positive', 'error');
 
+    // Validation
+    if (form.type === 'income' && !form.accountId) return toast('Select an account to receive into', 'error');
+    if (form.type === 'credit_card_payment') {
+      if (!form.accountId) return toast('Select an account to pay from', 'error');
+      if (!form.creditCardId) return toast('Select a credit card to pay', 'error');
+    }
+    if (form.type === 'expense' && form.paymentMethod === 'Credit Card' && !form.creditCardId) {
+      return toast('Select a credit card for this expense', 'error');
+    }
+
     setSaving(true);
     try {
-      const body = {
-        ...form,
+      const body: any = {
+        type: form.type,
         amount: Number(form.amount),
+        description: form.description,
+        notes: form.notes || undefined,
         date: new Date(form.date).toISOString(),
         categoryId: form.categoryId || undefined,
-        creditCardId: form.paymentMethod === 'Credit Card' ? form.creditCardId || undefined : undefined,
       };
+
+      if (form.type === 'income') {
+        body.accountId = form.accountId;
+        body.paymentMethod = 'Bank Transfer';
+      } else if (form.type === 'expense') {
+        body.paymentMethod = form.paymentMethod;
+        if (form.paymentMethod === 'Credit Card') {
+          // CC expense — DO NOT set accountId
+          body.creditCardId = form.creditCardId;
+        } else {
+          body.accountId = form.accountId || undefined;
+        }
+      } else if (form.type === 'credit_card_payment') {
+        body.accountId = form.accountId;
+        body.creditCardId = form.creditCardId;
+        body.paymentMethod = 'Bank Transfer';
+      }
 
       if (editing) {
         await api.put(`/transactions/${editing._id}`, body);
@@ -165,8 +200,11 @@ export default function Transactions() {
           <button className="btn btn-secondary btn-icon" onClick={exportCSV} title="Export CSV">
             <Download size={16} />
           </button>
+          <button className="btn btn-secondary" onClick={() => setQuickAddOpen(true)}>
+            <Zap size={16} /> Quick Add
+          </button>
           <button className="btn btn-primary" onClick={openNew}>
-            <Plus size={16} /> Add Transaction
+            <Plus size={16} /> Advanced
           </button>
         </div>
       </div>
@@ -292,6 +330,15 @@ export default function Transactions() {
                     </span>
                     <span className="text-xs muted">·</span>
                     <span className="text-xs muted">{t.paymentMethod}</span>
+                    {t.accountId && (
+                      <>
+                        <span className="text-xs muted">·</span>
+                        <span className="text-xs muted flex items-center gap-1">
+                          <Building2 size={10} />
+                          {t.accountId.accountName}
+                        </span>
+                      </>
+                    )}
                     {t.creditCardId && (
                       <>
                         <span className="text-xs muted">·</span>
@@ -364,38 +411,50 @@ export default function Transactions() {
         onClose={() => setOpen(false)}
       >
         <form onSubmit={save} className="space-y-4">
-          {/* Type */}
+
+          {/* ── TYPE SELECTOR — large and clear ── */}
           <div>
-            <label className="label">Type</label>
+            <label className="label mb-2">What happened?</label>
             <div className="flex gap-2">
-              {(['expense', 'income', 'credit_card_payment'] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  className={`btn flex-1 text-sm ${form.type === t ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ padding: '8px 4px', fontSize: 12 }}
-                  onClick={() => setForm({ ...form, type: t, categoryId: '' })}
-                >
-                  {t === 'expense' ? 'Expense' : t === 'income' ? 'Income' : 'CC Payment'}
-                </button>
-              ))}
+              {[
+                { t: 'income', emoji: '💰', label: 'Income', color: '#22c55e', bg: 'rgba(34,197,94,0.12)', border: '#22c55e' },
+                { t: 'expense', emoji: '💸', label: 'Expense', color: '#f43f5e', bg: 'rgba(244,63,94,0.12)', border: '#f43f5e' },
+                { t: 'credit_card_payment', emoji: '💳', label: 'CC Pay', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: '#f59e0b' },
+              ].map(({ t, emoji, label, color, bg, border }) => {
+                const active = form.type === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setForm({ ...form, type: t, categoryId: '', paymentMethod: t === 'credit_card_payment' ? 'Bank Transfer' : form.paymentMethod, creditCardId: '', accountId: '' })}
+                    className="flex-1 flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl border-2 transition-all"
+                    style={{
+                      borderColor: active ? border : '#1e2130',
+                      background: active ? bg : 'transparent',
+                    }}
+                  >
+                    <span className="text-xl">{emoji}</span>
+                    <span className="text-xs font-semibold" style={{ color: active ? color : '#8b92a5' }}>{label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Description + Amount */}
+          {/* ── DESCRIPTION + AMOUNT ── */}
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <label className="label">Description *</label>
               <input
                 className="input"
-                placeholder="e.g. Zomato order"
+                placeholder={form.type === 'credit_card_payment' ? 'e.g. HDFC CC Bill Payment' : form.type === 'income' ? 'e.g. Monthly Salary' : 'e.g. Zomato order'}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 required
               />
             </div>
             <div>
-              <label className="label">Amount *</label>
+              <label className="label">Amount (₹) *</label>
               <input
                 className="input"
                 type="number"
@@ -419,39 +478,45 @@ export default function Transactions() {
             </div>
           </div>
 
-          {/* Category */}
-          <div>
-            <label className="label">Category</label>
-            <select
-              className="input"
-              value={form.categoryId}
-              onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-            >
-              <option value="">— Select category —</option>
-              {filteredCats.map((c) => (
-                <option key={c._id} value={c._id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Payment Method */}
-          <div>
-            <label className="label">Payment Method</label>
-            <select
-              className="input"
-              value={form.paymentMethod}
-              onChange={(e) => setForm({ ...form, paymentMethod: e.target.value, creditCardId: '' })}
-            >
-              {PAYMENT_METHODS.map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Credit Card selector */}
-          {form.paymentMethod === 'Credit Card' && (
+          {/* ── CATEGORY (not shown for CC Payment) ── */}
+          {form.type !== 'credit_card_payment' && (
             <div>
-              <label className="label">Credit Card *</label>
+              <label className="label">Category</label>
+              <select
+                className="input"
+                value={form.categoryId}
+                onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+              >
+                <option value="">— Select category —</option>
+                {filteredCats.map((c) => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* ── PAYMENT METHOD (Expense only, not CC Payment) ── */}
+          {form.type === 'expense' && (
+            <div>
+              <label className="label">Payment Method</label>
+              <select
+                className="input"
+                value={form.paymentMethod}
+                onChange={(e) => setForm({ ...form, paymentMethod: e.target.value, creditCardId: '' })}
+              >
+                {PAYMENT_METHODS.map((m) => (
+                  <option key={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* ── CREDIT CARD selector — for CC expenses or CC payments ── */}
+          {(form.paymentMethod === 'Credit Card' && form.type === 'expense') || form.type === 'credit_card_payment' ? (
+            <div>
+              <label className="label">
+                {form.type === 'credit_card_payment' ? 'Credit Card to Pay *' : 'Credit Card Used *'}
+              </label>
               <select
                 className="input"
                 value={form.creditCardId}
@@ -461,17 +526,49 @@ export default function Transactions() {
                 <option value="">— Select card —</option>
                 {cards.map((c) => (
                   <option key={c._id} value={c._id}>
-                    {c.cardName} {c.last4 ? `···${c.last4}` : ''} ({c.bank || 'Card'})
+                    {c.cardName} {c.last4 ? `···${c.last4}` : ''} — Outstanding: ₹{Number(c.outstandingBalance || 0).toLocaleString('en-IN')}
                   </option>
                 ))}
               </select>
               {cards.length === 0 && (
                 <p className="text-xs text-amber-400 mt-1">No credit cards found. Add one first.</p>
               )}
+              {form.type === 'expense' && form.paymentMethod === 'Credit Card' && (
+                <p className="text-xs muted mt-1">💡 Bank account will NOT be deducted — CC outstanding increases instead.</p>
+              )}
+            </div>
+          ) : null}
+
+          {/* ── ACCOUNT selector — shown for income, CC expenses (no), debit expenses (yes), CC payments (yes) ── */}
+          {(form.type === 'income' ||
+            form.type === 'credit_card_payment' ||
+            (form.type === 'expense' && form.paymentMethod !== 'Credit Card')) && (
+            <div>
+              <label className="label">
+                {form.type === 'income' ? 'Received Into *' :
+                  form.type === 'credit_card_payment' ? 'Pay From Account *' :
+                  'Paid From Account'}
+              </label>
+              <select
+                className="input"
+                value={form.accountId}
+                onChange={(e) => setForm({ ...form, accountId: e.target.value })}
+                required={form.type === 'income' || form.type === 'credit_card_payment'}
+              >
+                <option value="">— Select account —</option>
+                {accounts.map((a) => (
+                  <option key={a._id} value={a._id}>
+                    {a.accountName} — ₹{Number(a.balance).toLocaleString('en-IN')}
+                  </option>
+                ))}
+              </select>
+              {accounts.length === 0 && (
+                <p className="text-xs text-amber-400 mt-1">No accounts found. Add one in the Accounts section.</p>
+              )}
             </div>
           )}
 
-          {/* Notes */}
+          {/* ── NOTES ── */}
           <div>
             <label className="label">Notes (optional)</label>
             <textarea
@@ -509,6 +606,13 @@ export default function Transactions() {
           </button>
         </div>
       </Modal>
+
+      {/* Quick Add Modal */}
+      <QuickAdd
+        open={quickAddOpen}
+        onClose={() => setQuickAddOpen(false)}
+        onDone={load}
+      />
     </div>
   );
 }
