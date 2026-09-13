@@ -124,11 +124,8 @@ function AccountCard({ acc, onEdit, onDelete, onView }: any) {
 
       {/* ── Income / Expense Stats ── */}
       <div
-        className="grid grid-cols-2 divide-x mt-3"
-        style={{
-          background: 'rgba(0,0,0,0.22)',
-          divideColor: 'rgba(255,255,255,0.1)',
-        }}
+        className="grid grid-cols-2 mt-3"
+        style={{ background: 'rgba(0,0,0,0.22)' }}
       >
         <div className="p-4 text-center">
           <div className="flex items-center justify-center gap-1 mb-1">
