@@ -58,37 +58,41 @@ export default function Transactions() {
     (c) => !form.type || c.type === form.type || form.type === 'credit_card_payment'
   );
 
-  const load = useCallback(async () => {
+  const load = useCallback((signal?: AbortSignal) => {
     setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (search) params.set('search', search);
-      if (filterType) params.set('type', filterType);
-      if (filterCat) params.set('categoryId', filterCat);
-      if (period) params.set('period', period);
-      params.set('page', String(page));
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (filterType) params.set('type', filterType);
+    if (filterCat) params.set('categoryId', filterCat);
+    if (period) params.set('period', period);
+    params.set('page', String(page));
 
-      const [txRes, catRes, cardRes, accRes] = await Promise.all([
-        api.get(`/transactions?${params}`),
-        api.get('/categories'),
-        api.get('/credit-cards'),
-        api.get('/accounts'),
-      ]);
-
-      setItems(txRes.data.data || []);
-      setTotal(txRes.data.total || 0);
-      setPages(txRes.data.pages || 1);
-      setCategories(catRes.data);
-      setCards(cardRes.data);
-      setAccounts(accRes.data);
-    } catch {
-      toast('Failed to load transactions', 'error');
-    } finally {
-      setLoading(false);
-    }
+    Promise.all([
+      api.get(`/transactions?${params}`, { signal }),
+      api.get('/categories', { signal }),
+      api.get('/credit-cards', { signal }),
+      api.get('/accounts', { signal }),
+    ])
+      .then(([txRes, catRes, cardRes, accRes]) => {
+        setItems(txRes.data.data || []);
+        setTotal(txRes.data.total || 0);
+        setPages(txRes.data.pages || 1);
+        setCategories(catRes.data);
+        setCards(cardRes.data);
+        setAccounts(accRes.data);
+      })
+      .catch((err) => {
+        if (err?.code === 'ERR_CANCELED' || err?.name === 'AbortError') return;
+        toast('Failed to load transactions', 'error');
+      })
+      .finally(() => setLoading(false));
   }, [search, filterType, filterCat, period, page]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
 
   // Close popover on outside click
   useEffect(() => {
@@ -457,42 +461,73 @@ export default function Transactions() {
               <div key={t._id}>
                 {/* ── MOBILE card ─────────────────────── */}
                 <div className="tx-card md:hidden">
-                  {/* Left: Category icon */}
+                  {/* Left: icon */}
                   <div className="flex-shrink-0">
-                    <CategoryIcon
-                      icon={cat?.icon || 'Circle'}
-                      color={cat?.color || '#6b7280'}
-                      size={16}
-                      bgSize={38}
-                    />
+                    {isCCPayment ? (
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'rgba(245,158,11,0.15)' }}>
+                        <CreditCard size={18} style={{ color: '#f59e0b' }} />
+                      </div>
+                    ) : (
+                      <CategoryIcon
+                        icon={cat?.icon || 'Circle'}
+                        color={cat?.color || '#6b7280'}
+                        size={16}
+                        bgSize={38}
+                      />
+                    )}
                   </div>
 
                   {/* Middle: description + meta */}
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{t.description}</div>
-                    <div className="flex flex-wrap items-center gap-x-1.5 mt-0.5">
-                      {cat && <span className="text-xs muted">{cat.name}</span>}
-                      {cat && <span className="text-xs muted-2">·</span>}
-                      <span className="text-xs muted">{formatDate(t.date)}</span>
-                      <span className="text-xs muted-2">·</span>
-                      <span className="text-xs muted">{t.paymentMethod}</span>
-                      {t.accountId && (
-                        <>
+                    {isCCPayment ? (
+                      <>
+                        <div className="text-sm font-semibold" style={{ color: '#f59e0b' }}>💳 CC Bill Payment</div>
+                        <div className="flex flex-col mt-0.5" style={{ lineHeight: 1.5 }}>
+                          {t.creditCardId && (
+                            <span className="text-xs muted flex items-center gap-1">
+                              <CreditCard size={9} style={{ color: '#f59e0b' }} />
+                              {t.creditCardId.cardName}{t.creditCardId.last4 ? ` ···${t.creditCardId.last4}` : ''}
+                            </span>
+                          )}
+                          <span className="text-xs muted-2" style={{ paddingLeft: 14 }}>↓</span>
+                          {t.accountId && (
+                            <span className="text-xs muted flex items-center gap-1">
+                              <Building2 size={9} />
+                              {t.accountId.accountName}
+                            </span>
+                          )}
+                          <span className="text-xs muted mt-0.5">{formatDate(t.date)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-sm font-medium truncate">{t.description}</div>
+                        <div className="flex flex-wrap items-center gap-x-1.5 mt-0.5">
+                          {cat && <span className="text-xs muted">{cat.name}</span>}
+                          {cat && <span className="text-xs muted-2">·</span>}
+                          <span className="text-xs muted">{formatDate(t.date)}</span>
                           <span className="text-xs muted-2">·</span>
-                          <span className="text-xs muted flex items-center gap-0.5">
-                            <Building2 size={9} />{t.accountId.accountName}
-                          </span>
-                        </>
-                      )}
-                      {t.creditCardId && (
-                        <>
-                          <span className="text-xs muted-2">·</span>
-                          <span className="text-xs muted flex items-center gap-0.5">
-                            <CreditCard size={9} />{t.creditCardId.cardName}
-                          </span>
-                        </>
-                      )}
-                    </div>
+                          <span className="text-xs muted">{t.paymentMethod}</span>
+                          {t.accountId && (
+                            <>
+                              <span className="text-xs muted-2">·</span>
+                              <span className="text-xs muted flex items-center gap-0.5">
+                                <Building2 size={9} />{t.accountId.accountName}
+                              </span>
+                            </>
+                          )}
+                          {t.creditCardId && (
+                            <>
+                              <span className="text-xs muted-2">·</span>
+                              <span className="text-xs muted flex items-center gap-0.5">
+                                <CreditCard size={9} />{t.creditCardId.cardName}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Right: amount + ⋮ menu */}
@@ -548,41 +583,75 @@ export default function Transactions() {
 
                 {/* ── DESKTOP row ─────────────────────── */}
                 <div className="tx-row hidden md:flex">
-                  <CategoryIcon
-                    icon={cat?.icon || 'Circle'}
-                    color={cat?.color || '#6b7280'}
-                    size={16}
-                    bgSize={38}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{t.description}</div>
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                      {cat && <span className="text-xs muted">{cat.name}</span>}
-                      <span className="text-xs muted">·</span>
-                      <span className="text-xs muted flex items-center gap-1">
-                        <Calendar size={10} />{formatDate(t.date)}
-                      </span>
-                      <span className="text-xs muted">·</span>
-                      <span className="text-xs muted">{t.paymentMethod}</span>
-                      {t.accountId && (
-                        <>
-                          <span className="text-xs muted">·</span>
-                          <span className="text-xs muted flex items-center gap-1">
-                            <Building2 size={10} />
-                            {t.accountId.accountName}
-                          </span>
-                        </>
-                      )}
-                      {t.creditCardId && (
-                        <>
-                          <span className="text-xs muted">·</span>
-                          <span className="text-xs muted flex items-center gap-1">
-                            <CreditCard size={10} />
-                            {t.creditCardId.cardName} ···{t.creditCardId.last4}
-                          </span>
-                        </>
-                      )}
+                  {isCCPayment ? (
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'rgba(245,158,11,0.15)' }}>
+                      <CreditCard size={18} style={{ color: '#f59e0b' }} />
                     </div>
+                  ) : (
+                    <CategoryIcon
+                      icon={cat?.icon || 'Circle'}
+                      color={cat?.color || '#6b7280'}
+                      size={16}
+                      bgSize={38}
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    {isCCPayment ? (
+                      <>
+                        <div className="text-sm font-semibold" style={{ color: '#f59e0b' }}>💳 Credit Card Payment</div>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          {t.creditCardId && (
+                            <span className="text-xs muted flex items-center gap-1">
+                              <CreditCard size={9} style={{ color: '#f59e0b' }} />
+                              {t.creditCardId.cardName}{t.creditCardId.last4 ? ` ···${t.creditCardId.last4}` : ''}
+                            </span>
+                          )}
+                          <span className="text-xs" style={{ color: 'var(--muted-2)' }}>→</span>
+                          {t.accountId && (
+                            <span className="text-xs muted flex items-center gap-1">
+                              <Building2 size={9} />
+                              {t.accountId.accountName}
+                            </span>
+                          )}
+                          <span className="text-xs muted">·</span>
+                          <span className="text-xs muted flex items-center gap-1">
+                            <Calendar size={10} />{formatDate(t.date)}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-sm font-medium truncate">{t.description}</div>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                          {cat && <span className="text-xs muted">{cat.name}</span>}
+                          <span className="text-xs muted">·</span>
+                          <span className="text-xs muted flex items-center gap-1">
+                            <Calendar size={10} />{formatDate(t.date)}
+                          </span>
+                          <span className="text-xs muted">·</span>
+                          <span className="text-xs muted">{t.paymentMethod}</span>
+                          {t.accountId && (
+                            <>
+                              <span className="text-xs muted">·</span>
+                              <span className="text-xs muted flex items-center gap-1">
+                                <Building2 size={10} />
+                                {t.accountId.accountName}
+                              </span>
+                            </>
+                          )}
+                          {t.creditCardId && (
+                            <>
+                              <span className="text-xs muted">·</span>
+                              <span className="text-xs muted flex items-center gap-1">
+                                <CreditCard size={10} />
+                                {t.creditCardId.cardName} ···{t.creditCardId.last4}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <div

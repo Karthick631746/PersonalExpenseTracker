@@ -331,7 +331,8 @@ r.get('/monthly-todos', async (req: AuthRequest, res) => {
 
     const todos = await MonthlyTodo.find({ userId: req.userId, month, year })
       .populate('linkedAccountId', 'accountName bankName icon color balance')
-      .populate('linkedCreditCardId', 'cardName bank last4 color')
+      .populate('linkedCreditCardId', 'cardName bank last4 color outstandingBalance dueDate')
+      .populate('completedWithAccountId', 'accountName bankName accountNumberLast4 icon color')
       .sort({ isCompleted: 1, dueDate: 1 });
 
     const total = todos.reduce((s, t) => s + (t.amount || 0), 0);
@@ -402,54 +403,104 @@ r.post('/monthly-todos/:id/complete', async (req: AuthRequest, res) => {
     const todo = await MonthlyTodo.findOne({ _id: req.params.id, userId: uid });
     if (!todo) return res.status(404).json({ message: 'Todo not found' });
 
-    const { createTransaction, accountId, categoryId } = req.body;
-    let newTransaction = null;
+    // ── Prevent double payment ─────────────────────────────────────
+    if (todo.isCompleted) {
+      return res.status(409).json({ message: 'This todo has already been paid/completed.' });
+    }
 
-    // Optionally create a transaction
+    const { accountId, amount: rawAmount, createTransaction } = req.body;
+    const isCC = todo.category === 'Credit Card';
+    let newTransaction: any = null;
+
     if (createTransaction && accountId) {
+      const amount = Number(rawAmount) || todo.amount || 0;
+      if (amount <= 0) return res.status(400).json({ message: 'Amount must be positive' });
+
+      // Validate bank account
       const acc = await Account.findOne({ _id: accountId, userId: uid });
       if (!acc) return res.status(404).json({ message: 'Account not found' });
 
-      const amount = Number(req.body.amount) || todo.amount || 0;
-      if (amount <= 0) return res.status(400).json({ message: 'Amount must be positive' });
-
-      const isCC = todo.category === 'Credit Card';
-      
-      const txBody: any = {
-        userId: uid,
-        type: isCC ? 'credit_card_payment' : 'expense',
-        amount,
-        accountId,
-        description: todo.title,
-        date: new Date(),
-        paymentMethod: isCC ? 'Bank Transfer' : 'Bank Transfer',
-      };
-      if (categoryId) txBody.categoryId = categoryId;
-      if (isCC && todo.linkedCreditCardId) txBody.creditCardId = todo.linkedCreditCardId;
-
-      newTransaction = await Transaction.create(txBody);
-      
-      // Update account balance
-      await Account.findByIdAndUpdate(accountId, { $inc: { balance: -amount } });
-      
-      // Update credit card balance if applicable
       if (isCC && todo.linkedCreditCardId) {
-        await CreditCard.findByIdAndUpdate(todo.linkedCreditCardId, { $inc: { outstandingBalance: -amount } });
-      }
-    }
+        // ── CC Bill Payment — full atomic flow ──────────────────────
+        const card = await CreditCard.findOne({ _id: todo.linkedCreditCardId, userId: uid });
+        if (!card) return res.status(404).json({ message: 'Credit card not found' });
 
-    // Mark todo as completed
-    todo.isCompleted = true;
-    todo.completedAt = new Date();
-    await todo.save();
+        if (amount > card.outstandingBalance) {
+          return res.status(400).json({
+            message: `Payment ₹${amount} exceeds outstanding balance ₹${card.outstandingBalance}.`,
+          });
+        }
+
+        // Step 1: Deduct from bank account
+        await Account.findByIdAndUpdate(accountId, { $inc: { balance: -amount } });
+
+        // Step 2: Reduce CC outstanding
+        await CreditCard.findByIdAndUpdate(todo.linkedCreditCardId, {
+          $inc: { outstandingBalance: -amount },
+        });
+
+        // Step 3: Create exactly ONE CC_PAYMENT transaction
+        newTransaction = await Transaction.create({
+          userId: uid,
+          type: 'credit_card_payment',
+          amount,
+          accountId,
+          creditCardId: todo.linkedCreditCardId,
+          todoId: todo._id,
+          description: `CC Bill: ${card.cardName}${card.last4 ? ` ···${card.last4}` : ''}`,
+          date: new Date(),
+          paymentMethod: 'Bank Transfer',
+        });
+
+        // Step 4: Mark todo paid with audit trail
+        todo.isCompleted = true;
+        todo.completedAt = new Date();
+        (todo as any).completedWithAccountId = accountId;
+        (todo as any).completedTransactionId = newTransaction._id;
+        await todo.save();
+
+      } else {
+        // ── Normal expense todo ─────────────────────────────────────
+        const txBody: any = {
+          userId: uid,
+          type: 'expense',
+          amount,
+          accountId,
+          description: todo.title,
+          date: new Date(),
+          paymentMethod: 'Bank Transfer',
+        };
+
+        newTransaction = await Transaction.create(txBody);
+        await Account.findByIdAndUpdate(accountId, { $inc: { balance: -amount } });
+
+        todo.isCompleted = true;
+        todo.completedAt = new Date();
+        (todo as any).completedWithAccountId = accountId;
+        (todo as any).completedTransactionId = newTransaction._id;
+        await todo.save();
+      }
+    } else {
+      // Simple mark-complete without transaction (no accountId provided)
+      todo.isCompleted = true;
+      todo.completedAt = new Date();
+      await todo.save();
+    }
 
     const populated = await MonthlyTodo.findById(todo._id)
       .populate('linkedAccountId', 'accountName bankName icon color balance')
-      .populate('linkedCreditCardId', 'cardName bank last4 color');
+      .populate('linkedCreditCardId', 'cardName bank last4 color outstandingBalance dueDate')
+      .populate('completedWithAccountId', 'accountName bankName last4 accountNumberLast4 icon color');
 
-    res.json({ todo: populated, transaction: newTransaction });
+    const populatedTx = newTransaction
+      ? await Transaction.findById(newTransaction._id)
+          .populate('creditCardId', 'cardName bank last4 color')
+          .populate('accountId', 'accountName bankName icon color')
+      : null;
+
+    res.json({ todo: populated, transaction: populatedTx });
   } catch (e: any) {
-    res.status(400).json({ message: e.message || 'Invalid data' });
+    res.status(400).json({ message: e.message || 'Payment failed' });
   }
 });
 
@@ -941,6 +992,44 @@ r.delete('/credit-cards/:id', async (req: AuthRequest, res) => {
     const card = await CreditCard.findOneAndDelete({ _id: req.params.id, userId: req.userId });
     if (!card) return res.status(404).json({ message: 'Card not found' });
     res.json({ ok: true });
+  } catch {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ── Credit Card Bill Info (for MonthlyTodo auto-fill) ──────────────
+r.get('/credit-cards/:id/bill-info', async (req: AuthRequest, res) => {
+  try {
+    const card = await CreditCard.findOne({ _id: req.params.id, userId: req.userId });
+    if (!card) return res.status(404).json({ message: 'Card not found' });
+
+    // Calculate next applicable due date based on card.dueDate (day of month)
+    let nextDueDate: Date | null = null;
+    if (card.dueDate) {
+      const now = new Date();
+      const today = now.getDate();
+      const dueDay = card.dueDate;
+
+      // If this month's due date is today or in the future, use it
+      if (dueDay >= today) {
+        nextDueDate = new Date(now.getFullYear(), now.getMonth(), dueDay);
+      } else {
+        // This month's due date has passed — use next month
+        nextDueDate = new Date(now.getFullYear(), now.getMonth() + 1, dueDay);
+      }
+    }
+
+    res.json({
+      _id: card._id,
+      cardName: card.cardName,
+      bank: card.bank,
+      last4: card.last4,
+      outstandingBalance: card.outstandingBalance,
+      creditLimit: card.creditLimit,
+      billingDate: card.billingDate,
+      dueDay: card.dueDate,
+      nextDueDate: nextDueDate ? nextDueDate.toISOString() : null,
+    });
   } catch {
     res.status(500).json({ message: 'Server error' });
   }

@@ -78,6 +78,9 @@ const MonthlyTodoSchema = new Schema(
     linkedCreditCardId: { type: Schema.Types.ObjectId, ref: 'CreditCard' },
     isCompleted: { type: Boolean, default: false },
     completedAt: { type: Date },
+    // CC bill payment audit trail — prevents double payment and enables paid-state UI
+    completedWithAccountId: { type: Schema.Types.ObjectId, ref: 'Account' },
+    completedTransactionId: { type: Schema.Types.ObjectId, ref: 'Transaction' },
     month: { type: Number, min: 1, max: 12, required: true },
     year: { type: Number, required: true },
   },
@@ -129,6 +132,7 @@ const TransactionSchema = new Schema(
     description: { type: String, required: true, trim: true },
     notes: { type: String, trim: true },
     tags: [String],
+    todoId: { type: Schema.Types.ObjectId, ref: 'MonthlyTodo' },
   },
   base
 );

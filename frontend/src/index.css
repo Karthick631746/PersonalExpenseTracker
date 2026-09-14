@@ -276,29 +276,31 @@ select.input option {
 }
 
 /* ── Transaction row (desktop) ─────────────────────── */
-.tx-row {
-  display: flex;
-  align-items: center;
-  padding: 14px 20px;
-  gap: 12px;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.1s;
-}
-.tx-row:last-child { border-bottom: 0; }
-.tx-row:hover { background: rgba(255,255,255,0.02); }
+@layer components {
+  .tx-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .tx-row:last-child { border-bottom: 0; }
+  .tx-row:hover { background: rgba(255,255,255,0.02); }
 
-/* ── Transaction card (mobile) ─────────────────────── */
-.tx-card {
-  display: flex;
-  align-items: center;
-  padding: 14px 16px;
-  gap: 12px;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.1s;
-  min-height: 64px;
+  /* ── Transaction card (mobile) ─────────────────────── */
+  .tx-card {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+    min-height: 64px;
+  }
+  .tx-card:last-child { border-bottom: 0; }
+  .tx-card:active { background: rgba(255,255,255,0.03); }
 }
-.tx-card:last-child { border-bottom: 0; }
-.tx-card:active { background: rgba(255,255,255,0.03); }
 
 /* ── Credit Card ───────────────────────────────────── */
 .cc-card {
